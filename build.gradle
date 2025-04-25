@@ -1,0 +1,196 @@
+plugins {
+    id 'java'
+	id 'com.google.protobuf' version '0.9.4'
+    id 'idea'
+    id 'application'
+    id 'visual-studio'
+    id 'maven-publish'
+	id "io.github.uoxx3.project-environment" version "1.0.1"
+}
+
+group 'com.nikhilm'
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_11
+}
+
+def grpcVersion = "1.65.1"
+def protobufVersion = "3.25.4"
+def baseVersion = '3.9.4'
+def baseGroupId = 'io.github.adempiere'
+def privateDependencyBaseVersion = "adempiere-3.9.4"
+
+def javaMainClass = "org.spin.template.server.TemplateServer"
+def descriptorFile = "adempiere-grpc-template-service.dsc"
+
+startScripts.enabled = false
+
+
+application {
+	mainClass.set(javaMainClass)
+}
+jar {
+	manifest {
+		attributes(
+			"Main-Class": javaMainClass
+		)
+	}
+}
+
+run {
+	doFirst {
+		// Set environment variables by .env project file
+		environment "TZ", projectEnv.get("TZ", null) ?: "America/Caracas"
+	}
+	args = [
+		"resources/env.yaml"
+	]
+}
+
+repositories {
+	mavenLocal()
+	mavenCentral()
+	maven {
+		// Custom GitHub Repository (ADempiere by Default)
+		url = findProperty("deployRepository") ?: System.properties['deploy.repository'] ?:
+			projectEnv.get("GITHUB_DEPLOY_REPOSITORY", null) ?: System.getenv("GITHUB_DEPLOY_REPOSITORY") ?:
+			"https://maven.pkg.github.com/adempiere/adempiere"
+		credentials {
+			// project property, system property, .env project file, system enviroment variable
+			username = findProperty("deployUsername") ?: System.properties['deploy.user'] ?:
+				projectEnv.get("GITHUB_DEPLOY_USER", null) ?: System.getenv("GITHUB_DEPLOY_USER")
+			password = findProperty("deployPassword") ?: System.properties['deploy.token'] ?:
+				projectEnv.get("GITHUB_DEPLOY_TOKEN", null) ?: System.getenv("GITHUB_DEPLOY_TOKEN")
+		}
+	}
+	maven {
+		// ADempiere organization maven github registry
+		url = "https://maven.pkg.github.com/adempiere/adempiere"
+		credentials {
+			// project property, system property, .env project file, system enviroment variable
+			username = findProperty("deployUsername") ?: System.properties['deploy.user'] ?:
+				projectEnv.get("GITHUB_DEPLOY_USER", null) ?: System.getenv("GITHUB_DEPLOY_USER")
+			password = findProperty("deployPassword") ?: System.properties['deploy.token'] ?:
+				projectEnv.get("GITHUB_DEPLOY_TOKEN", null) ?: System.getenv("GITHUB_DEPLOY_TOKEN")
+		}
+	}
+}
+
+protobuf {
+	protoc {
+		artifact = "com.google.protobuf:protoc:${protobufVersion}"
+	}
+	plugins {
+		grpc {
+			artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+		}
+	}
+	generateProtoTasks {
+		all()*.plugins {
+			grpc {}
+		}
+		all().configureEach { task ->
+			// If true, will generate a descriptor_set.desc file under
+			// task.outputBaseDir. Default is false.
+			// See --descriptor_set_out in protoc documentation about what it is.
+			task.generateDescriptorSet = true
+
+			// Allows to override the default for the descriptor set location
+			task.descriptorSetOptions.path = "${projectDir}/build/descriptors/${descriptorFile}"
+			// task.descriptorSetOptions.path = "${projectDir}/build/descriptors/adempiere-grpc-template-service.dsc"
+
+			// If true, the descriptor set will contain line number information
+			// and comments. Default is false.
+			task.descriptorSetOptions.includeSourceInfo = true
+		
+			// If true, the descriptor set will contain all transitive imports and
+			// is therefore self-contained. Default is false.
+			task.descriptorSetOptions.includeImports = true
+		}
+	}
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs 'build/generated/source/proto/main/grpc'
+            srcDirs 'build/generated/source/proto/main/java'
+            srcDirs 'src/main/proto'
+        }
+    }
+}
+
+// Copy proto descriptor another folder
+allprojects {
+	task copyDescriptor(type: Copy) {
+		from "${projectDir}/build/descriptors/${descriptorFile}"
+		into "${projectDir}/docker-compose/envoy/definitions"
+		// rename { "${descriptorFile}" }
+	}
+
+	tasks.matching {
+		it.name.startsWith('compileJava')
+	}.each { task ->
+		task.finalizedBy copyDescriptor
+	}
+}
+
+task AdempiereTemplateServer(type: CreateStartScripts) {
+	mainClass = javaMainClass
+    applicationName = 'adempiere-grpc-template-service-server'
+    outputDir = new File(project.buildDir, 'tmp')
+    classpath = jar.outputs.files + project.configurations.runtimeClasspath
+}
+
+applicationDistribution.into('bin') {
+	from(AdempiereTemplateServer)
+    fileMode = 0755
+}
+
+//	Create release for project
+task createRelease(type: Copy) {
+   dependsOn build
+   from file("$buildDir/distributions/")
+   into file("$buildDir/release/")
+   //destinationDir(file('build/release/'))
+   doLast {
+        file('build/release/')
+        	.listFiles({file -> file.isFile()} as FileFilter).sort()
+        	.each { File file ->
+            ant.checksum file: file
+        }
+   	}
+}
+
+dependencies {
+	implementation fileTree(
+        dir: 'dependencies',
+        include: [
+            '*.jar'
+        ]
+    )
+    implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
+    implementation "io.grpc:grpc-alts:${grpcVersion}"
+	implementation "io.netty:netty-handler:4.1.107.Final"
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation "io.grpc:grpc-netty:${grpcVersion}"
+    // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
+	implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
+	implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
+
+    //implementation 'javax.xml.bind:jaxb-api:2.4.0-b180830.0359'
+	//implementation 'com.sun.xml.bind:jaxb-impl:3.0.0-M4'
+	//implementation 'com.sun.xml.bind:jaxb-core:3.0.0-M4'
+	//implementation 'javax.activation:activation:1.1.1'
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.0'
+
+	//	ADempiere Core
+	implementation "${baseGroupId}:base:${baseVersion}"
+
+	// ADempiere Projects with additional features
+	implementation "${baseGroupId}:adempiere-grpc-utils:1.5.7"
+
+	//	Others
+    compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
+}
