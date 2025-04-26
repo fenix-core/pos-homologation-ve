@@ -54,7 +54,7 @@ repositories {
 		// Custom GitHub Repository (ADempiere by Default)
 		url = findProperty("deployRepository") ?: System.properties['deploy.repository'] ?:
 			projectEnv.get("GITHUB_DEPLOY_REPOSITORY", null) ?: System.getenv("GITHUB_DEPLOY_REPOSITORY") ?:
-			"https://maven.pkg.github.com/adempiere/adempiere"
+			"https://maven.pkg.github.com/erpya/repository"
 		credentials {
 			// project property, system property, .env project file, system enviroment variable
 			username = findProperty("deployUsername") ?: System.properties['deploy.user'] ?:
@@ -187,6 +187,11 @@ dependencies {
 
 	//	ADempiere Core
 	implementation "${baseGroupId}:base:${baseVersion}"
+
+	// ERP CyA
+	implementation "org.erpya.adempiere.fiscal-printer:fiscal-printer:1.6.6"
+	// implementation "org.erpya.adempiere.fiscal-printer:fiscal-printer-client:1.6.1"
+	// implementation "org.erpya.fiscal-printer.tools:fiscal-printer-api:1.3.9"
 
 	// ADempiere Projects with additional features
 	implementation "${baseGroupId}:adempiere-grpc-utils:1.5.7"
