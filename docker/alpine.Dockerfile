@@ -42,7 +42,7 @@ RUN	apk update && \
 WORKDIR /opt/apps/server
 
 # Copy src files
-COPY docker/adempiere-grpc-template-service /opt/apps/server
+COPY docker/pos-homologation-ve /opt/apps/server
 COPY docker/env.yaml /opt/apps/server/env.yaml
 COPY docker/start.sh /opt/apps/server/start.sh
 
