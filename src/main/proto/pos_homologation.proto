@@ -7,6 +7,8 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 
+import "base_data_type.proto";
+
 package pos.homologation;
 
 // System Info
@@ -36,6 +38,29 @@ message SimulateProcessOrderRequest {
 	int32 id = 2;
 	bool create_payments = 3;
 	bool is_open_refund = 4;
+	repeated CreatePaymentRequest payments = 6;
+}
+message CreatePaymentRequest {
+	string uuid = 2;
+	int32 id = 3;
+	string pos_uuid = 4;
+	string order_uuid = 5;
+	string invoice_uuid = 6;
+	string bank_uuid = 7;
+	string reference_no = 8;
+	string description = 9;
+	data.Decimal amount = 10;
+	string payment_date = 11;
+	string tender_type_code = 12;
+	string currency_uuid = 13;
+	string payment_method_uuid = 14;
+	string payment_account_date = 15;
+	bool is_refund = 16;
+	string charge_uuid = 17;
+	string collecting_agent_uuid = 18;
+	string reference_bank_account_uuid = 19;
+	string customer_bank_account_uuid = 20;
+	int32 invoice_reference_id = 21;
 }
 
 
@@ -71,23 +96,17 @@ service PosHomologationService {
 	// Process Order
 	rpc SimulateProcessOrder(SimulateProcessOrderRequest) returns (PrintTicketResponse) {
 		option (google.api.http) = {
-			post: "/v1/pos/homologation/{table_name}",
+			post: "/v1/pos/homologation/{pos_id}/process/simulate",
 			body: "*"
 		};
 	}
-
-	// rpc ProcessOrder(ProcessOrderRequest) returns (Order) {
-	// 	option (google.api.http) = {
-	// 		put: "/point-of-sales/{pos_id}/orders/{id}/process",
-	// 		body: "*"
-	// 	};
-	// }
 
 	//	Process without Print
 	rpc ProcessWithoutPrint(ProcessWithoutPrintRequest) returns (PrintTicketResponse) {
 		option (google.api.http) = {
-			post: "/point-of-sales/{pos_id}/process",
+			post: "/v1/pos/homologation/{pos_id}/process",
 			body: "*"
 		};
 	}
+
 }
