@@ -153,17 +153,18 @@ applicationDistribution.into('bin') {
 
 //	Create release for project
 task createRelease(type: Copy) {
-   dependsOn build
-   from file("$buildDir/distributions/")
-   into file("$buildDir/release/")
-   //destinationDir(file('build/release/'))
-   doLast {
-        file('build/release/')
-        	.listFiles({file -> file.isFile()} as FileFilter).sort()
-        	.each { File file ->
-            ant.checksum file: file
-        }
-   	}
+	dependsOn build
+	from file("$buildDir/distributions/")
+	into file("$buildDir/release/")
+	//destinationDir(file('build/release/'))
+	doLast {
+			file('build/release/')
+				.listFiles({file -> file.isFile()} as FileFilter)
+				.sort()
+				.each { File file ->
+					ant.checksum file: file
+				}
+		}
 }
 
 dependencies {
