@@ -44,7 +44,7 @@ public class PosHomologationServer {
 	/** Services/Methods allow request without Bearer token validation */
 	private List<String> ALLOW_REQUESTS_WITHOUT_TOKEN = Arrays.asList(
 		// proto package . proto service / proto method
-		"pos.homologation.PosHomologation/GetSystemInfo"
+		"pos.homologation.PosHomologationService/GetSystemInfo"
 	);
 
 	/**	Revoke session	*/
