@@ -8,6 +8,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 
 import "base_data_type.proto";
+import "core_functionality.proto";
 
 package pos.homologation;
 
@@ -23,21 +24,13 @@ message SystemInfo {
 }
 
 
-// Request for process a order
-message ProcessOrderRequest {
-	int32 pos_id = 1;
-	int32 id = 2;
-	bool create_payments = 3;
-	bool is_open_refund = 4;
-}
-
-
 // Request for simulate process a order
 message SimulateProcessOrderRequest {
 	int32 pos_id = 1;
-	int32 id = 2;
-	bool create_payments = 3;
-	bool is_open_refund = 4;
+	string pos_uuid = 2;
+	int32 id = 3;
+	bool create_payments = 4;
+	bool is_open_refund = 5;
 	repeated CreatePaymentRequest payments = 6;
 }
 message CreatePaymentRequest {
@@ -64,11 +57,147 @@ message CreatePaymentRequest {
 }
 
 
+// Campaign
+message Campaign {
+	int32 id = 1;
+	string uuid = 2;
+	string name = 3;
+	string description = 4;
+	int64 start_date = 5;
+	int64 end_date = 6;
+}
+
+message City {
+	int32 id = 1;
+	string uuid = 2;
+	string name = 3;
+}
+message Region {
+	int32 id = 1;
+	string uuid = 2;
+	string name = 3;
+}
+message Address {
+	int32 id = 1;
+	string uuid = 2;
+	//	Location
+	Region region = 4;
+	City city = 5;
+	string address1 = 6;
+	string address2 = 7;
+	string address3 = 8;
+	string address4 = 9;
+	string phone = 10;
+	string postal_code = 11;
+	string country_code = 12;
+	string country_uuid = 13;
+	int32 country_id = 14;
+	bool is_default_shipping = 15;
+	bool is_default_billing = 16;
+	string contact_name = 17;
+	string email = 18;
+	string description = 19;
+	string first_name = 20;
+	string last_name = 21;
+	// map<string, data.Value> additional_attributes = 22;
+	google.protobuf.Struct additional_attributes = 22;
+}
+// Customer
+message Customer {
+	int32 id = 1;
+	string uuid = 2;
+	string value = 3;
+	string tax_id = 4;
+	string duns = 5;
+	string naics = 6;
+	string name = 7;
+	string last_name = 8;
+	string description = 9;
+	repeated Address addresses = 10;
+	// map<string, data.Value> additional_attributes = 11;
+	google.protobuf.Struct additional_attributes = 11;
+}
+
+// Sales Order
+message Order {
+	string uuid = 1;
+	int32 id = 2;
+	string document_no = 3;
+	data.DocumentType document_type = 4;
+	data.SalesRepresentative sales_representative = 5;
+	data.DocumentStatus document_status = 6;
+	data.PriceList price_list = 7;
+	data.Warehouse warehouse = 8;
+	data.Decimal total_lines = 9;
+	data.Decimal grand_total = 10;
+	data.Decimal tax_amount = 12;
+	data.Decimal discount_amount = 13;
+	string date_ordered = 14;
+	Customer customer = 15;
+	bool is_delivered = 16;
+	string order_reference = 17;
+	string description = 18;
+	Campaign campaign = 19;
+	data.Decimal display_currency_rate = 20;
+	data.Decimal open_amount = 21;
+	data.Decimal payment_amount = 22;
+	data.Decimal refund_amount = 23;
+	data.Decimal charge_amount = 24;
+	data.Decimal credit_amount = 25;
+	int32 source_rma_id = 26;
+	bool is_rma = 27;
+	bool is_binding_offer = 28;
+	bool is_order = 29;
+}
+
+// Sales Order Line
+message OrderLine {
+	string uuid = 1;
+	string order_uuid = 2;
+	data.Product product = 3;
+	data.Charge charge = 4;
+	string line_description = 5;
+	string description = 6;
+	data.Warehouse warehouse = 7;
+	data.Decimal quantity = 8;
+	data.Decimal quantity_ordered = 9;
+	data.Decimal available_quantity = 10;
+	data.Decimal price = 11;
+	data.Decimal price_with_tax = 12;
+	data.Decimal price_base = 13;
+	data.Decimal price_base_with_tax = 14;
+	data.Decimal price_list = 15;
+	data.Decimal price_list_with_tax = 16;
+	data.Decimal discount_rate = 17;
+	data.Decimal discount_amount = 18;
+	data.Decimal tax_amount = 19;
+	data.Decimal base_tax_amount = 20;
+	data.Decimal list_tax_amount = 21;
+	data.TaxRate tax_rate = 22;
+	//	Totals
+	data.Decimal total_discount_amount = 23;
+	data.Decimal total_tax_amount = 24;
+	data.Decimal total_base_amount = 25;
+	data.Decimal total_base_amount_with_tax = 26;
+	data.Decimal total_amount = 27;
+	data.Decimal total_amount_with_tax = 28;
+	int32 line = 29;
+	data.ProductConversion uom = 30;
+	data.ProductConversion product_uom = 31;
+	// time_control.ResourceAssignment resource_assignment = 32;
+	int32 id = 33;
+	int32 source_rma_line_id = 34;
+}
+
+
 //	Print Ticket
 message ProcessWithoutPrintRequest {
 	int32 pos_id = 1;
-	int32 order_id = 2;
-	int32 invoice_id = 3;
+	string pos_uuid = 2;
+	int32 id = 3;
+	bool create_payments = 4;
+	bool is_open_refund = 5;
+	repeated CreatePaymentRequest payments = 6;
 }
 
 
@@ -80,6 +209,7 @@ message PrintTicketResponse {
 	string mime_type = 4;
 	bytes output_stream = 5;
 	string result_type = 6;
+	// map<string, string> result_values = 7;
 	google.protobuf.Value result_values = 7;
 }
 
@@ -96,15 +226,15 @@ service PosHomologationService {
 	// Process Order
 	rpc SimulateProcessOrder(SimulateProcessOrderRequest) returns (PrintTicketResponse) {
 		option (google.api.http) = {
-			post: "/v1/pos/homologation/{pos_id}/process/simulate",
+			post: "/v1/pos/homologation/{pos_id}/process/{id}/simulate",
 			body: "*"
 		};
 	}
 
 	//	Process without Print
-	rpc ProcessWithoutPrint(ProcessWithoutPrintRequest) returns (PrintTicketResponse) {
+	rpc ProcessWithoutPrint(ProcessWithoutPrintRequest) returns (Order) {
 		option (google.api.http) = {
-			post: "/v1/pos/homologation/{pos_id}/process",
+			post: "/v1/pos/homologation/{pos_id}/process/{id}",
 			body: "*"
 		};
 	}

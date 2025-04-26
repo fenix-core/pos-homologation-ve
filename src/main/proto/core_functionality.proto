@@ -1,0 +1,179 @@
+/************************************************************************************
+ * Copyright (C) 2012-2018 E.R.P. Consultores y Asociados, C.A.                     *
+ * Contributor(s): Yamel Senih ysenih@erpya.com                                     *
+ * This program is free software: you can redistribute it and/or modify             *
+ * it under the terms of the GNU General Public License as published by             *
+ * the Free Software Foundation, either version 2 of the License, or                *
+ * (at your option) any later version.                                              *
+ * This program is distributed in the hope that it will be useful,                  *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of                   *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                     *
+ * GNU General Public License for more details.                                     *
+ * You should have received a copy of the GNU General Public License                *
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.            *
+ ************************************************************************************/
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.spin.backend.grpc.common";
+option java_outer_classname = "ADempiereCoreFunctionality";
+
+import "base_data_type.proto";
+
+package data;
+
+
+// Country
+message Country {
+	string uuid = 1;
+	int32 id = 2;
+	string country_code = 3;
+	string name = 4;
+	string description = 5;
+	bool has_region = 6;
+	string region_name = 7;
+	string display_sequence = 8;
+	bool is_address_lines_reverse = 9;
+	string capture_sequence = 10;
+	string display_sequence_local = 11;
+	bool is_address_lines_local_reverse = 12;
+	string expression_postal = 13;
+	bool has_postal_add = 14;
+	string expression_phone = 15;
+	string media_size = 16;
+	string expression_bank_routing_no = 17;
+	string expression_bank_account_no = 18;
+	string language = 19;
+	bool allow_cities_out_of_list = 20;
+	bool is_postcode_lookup = 21;
+	Currency currency = 22;
+}
+
+
+// Currency info
+message Currency {
+	string uuid = 1;
+	int32 id = 2;
+	string iso_code = 3;
+	string cur_symbol = 4;
+	string description = 5;
+	int32 standard_precision = 6;
+	int32 costing_precision = 7;
+}
+
+// Warehouse
+message Warehouse {
+	int32 id = 1;
+	string uuid = 2;
+	string name = 3;
+	string description = 4;
+}
+
+
+// Unit of Measure
+message UnitOfMeasure {
+	string uuid = 1;
+	int32 id = 2;
+	string code = 3;
+	string symbol = 4;
+	string name = 5;
+	string description = 6;
+	int32 standard_precision = 7;
+	int32 costing_precision = 8;
+}
+
+// Product UOM Conversion
+message ProductConversion {
+	int32 id = 1;
+	string uuid = 2;
+	UnitOfMeasure uom = 3;
+	UnitOfMeasure product_uom = 4;
+	Decimal multiply_rate = 5;
+	Decimal divide_rate = 6;
+}
+
+
+// Charge definition
+message Charge {
+	int32 id = 1;
+	string uuid = 2;
+	string name = 3;
+	string description = 4;
+}
+
+
+// Document Type definition
+message DocumentType {
+	string uuid = 1;
+	int32 id = 2;
+	string name = 3;
+	string print_name = 4;
+	string description = 5;
+}
+
+// Sales Representative definition
+message SalesRepresentative {
+	int32 id = 1;
+	string uuid = 2;
+	string name = 3;
+	string description = 4;
+}
+
+// Product Definition
+message Product {
+	string uuid = 1;
+	int32 id = 2;
+	string value = 3;
+	string name = 4;
+	string help = 5;
+	string document_note = 6;
+	string uom_name = 7;
+	string product_type = 8;
+	bool is_stocked = 9;
+	bool is_drop_ship = 10;
+	bool is_purchased = 11;
+	bool is_sold = 12;
+	string image_url = 13;
+	string product_category_name = 14;
+	string product_group_name = 15;
+	string product_class_name = 16;
+	string product_classification_name = 17;
+	Decimal weight = 18;
+	Decimal volume = 19;
+	string upc = 20;
+	string sku = 21;
+	int32 shelf_width = 22;
+	Decimal shelf_height = 23;
+	int32 shelf_depth = 24;
+	int32 units_per_pack = 25;
+	Decimal units_per_pallet = 26;
+	int32 guarantee_days = 27;
+	string description_url = 28;
+	string version_no = 29;
+	string tax_category = 30;
+	string description = 31;
+}
+
+// Tax Rate
+message TaxRate {
+	string uuid = 1;
+	int32 id = 2;
+	string name = 3;
+	string description = 4;
+	string tax_indicator = 5;
+	Decimal rate = 6;
+}
+
+//	Price List
+message PriceList {
+	string uuid = 1;
+	int32 id = 2;
+	string name = 3;
+	string description = 4;
+	Currency currency = 5;
+	bool is_default = 6;
+	bool is_tax_included = 7;
+	bool is_enforce_price_limit = 8;
+	bool is_net_price = 9;
+	int32 price_precision = 10;
+}

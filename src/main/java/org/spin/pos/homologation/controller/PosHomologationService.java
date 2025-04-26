@@ -17,6 +17,7 @@ package org.spin.pos.homologation.controller;
 import org.compiere.util.CLogger;
 import org.spin.pos.homologation.service.Service;
 import org.spin.proto.pos.homologation.GetSystemInfoRequest;
+import org.spin.proto.pos.homologation.Order;
 import org.spin.proto.pos.homologation.PosHomologationServiceGrpc.PosHomologationServiceImplBase;
 import org.spin.proto.pos.homologation.PrintTicketResponse;
 import org.spin.proto.pos.homologation.ProcessWithoutPrintRequest;
@@ -71,9 +72,9 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 
 
 	@Override
-	public void processWithoutPrint(ProcessWithoutPrintRequest request, StreamObserver<PrintTicketResponse> responseObserver) {
+	public void processWithoutPrint(ProcessWithoutPrintRequest request, StreamObserver<Order> responseObserver) {
 		try {
-			PrintTicketResponse.Builder builder = PrintTicketResponse.newBuilder();
+			Order.Builder builder = Order.newBuilder();
 			responseObserver.onNext(
 				builder.build()
 			);
