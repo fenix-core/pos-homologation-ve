@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License                 *
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.            *
  ************************************************************************************/
-package org.spin.template.setup;
+package org.spin.pos.homologation.setup;
 
 /**
  * Determinate all ADempiere client setup values for Human Resource
@@ -64,7 +64,7 @@ public class Database {
 		this.name = name;
 		this.type = type;
 	}
-	
+
 	/**
 	 * Default constructor without parameters
 	 */
@@ -144,7 +144,13 @@ public class Database {
 
 	@Override
 	public String toString() {
-		return "Database [host=" + host + ", port=" + port + ", user=" + user + ", password=******, name="
-				+ name + ", type=" + type + "]";
+		return "Database [host=" + host
+			+ ", port=" + port
+			+ ", user=" + user
+			+ ", password=******"
+			+ ", name=" + name
+			+ ", type=" + type + "]"
+		;
 	}
+
 }

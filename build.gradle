@@ -20,8 +20,8 @@ def baseVersion = '3.9.4'
 def baseGroupId = 'io.github.adempiere'
 def privateDependencyBaseVersion = "adempiere-3.9.4"
 
-def javaMainClass = "org.spin.template.server.TemplateServer"
-def descriptorFile = "adempiere-grpc-template-service.dsc"
+def javaMainClass = "org.spin.pos.homologation.server.PosHomologationServer"
+def descriptorFile = "pos-homologation-service.dsc"
 
 startScripts.enabled = false
 
@@ -97,7 +97,7 @@ protobuf {
 
 			// Allows to override the default for the descriptor set location
 			task.descriptorSetOptions.path = "${projectDir}/build/descriptors/${descriptorFile}"
-			// task.descriptorSetOptions.path = "${projectDir}/build/descriptors/adempiere-grpc-template-service.dsc"
+			// task.descriptorSetOptions.path = "${projectDir}/build/descriptors/pos-homologation-service.dsc"
 
 			// If true, the descriptor set will contain line number information
 			// and comments. Default is false.
@@ -137,7 +137,7 @@ allprojects {
 
 task AdempiereTemplateServer(type: CreateStartScripts) {
 	mainClass = javaMainClass
-    applicationName = 'adempiere-grpc-template-service-server'
+    applicationName = 'pos-homologation-service'
     outputDir = new File(project.buildDir, 'tmp')
     classpath = jar.outputs.files + project.configurations.runtimeClasspath
 }

@@ -6,10 +6,10 @@
 	"configurations": [
 		{
 			"type": "java",
-			"name": "ADmempiere gRPC Template",
+			"name": "POS Homologation VE",
 			"request": "launch",
-			"mainClass": "org.spin.template.server.TemplateServer",
-			"projectName": "adempiere-grpc-template-service",
+			"mainClass": "org.spin.pos.homologation.server.PosHomologationServer",
+			"projectName": "pos-homologation-ve",
 			"env": {
 				"TZ": "America/Caracas"
 			},

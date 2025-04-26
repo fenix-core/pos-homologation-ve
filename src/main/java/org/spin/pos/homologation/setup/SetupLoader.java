@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License                 *
  * along with this program. If not, see <https://www.gnu.org/licenses/>.             *
  ************************************************************************************/
-package org.spin.template.setup;
+package org.spin.pos.homologation.setup;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,8 +25,8 @@ import org.compiere.db.CConnection;
 import org.compiere.util.CLogMgt;
 import org.compiere.util.DB;
 import org.compiere.util.Ini;
+import org.spin.pos.homologation.setup.SetupLoader;
 import org.spin.server.config.BackendDatabaseConfig;
-import org.spin.template.setup.SetupLoader;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -37,6 +37,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  * @author Setup loader class
  */
 public class SetupLoader {
+
 	/**	Default instance	*/
 	private static SetupLoader instance;
 	/**	Setup	*/
@@ -61,7 +62,7 @@ public class SetupLoader {
 		ObjectMapper fileMapper = new ObjectMapper(new YAMLFactory());
 		setup = fileMapper.readValue(setupFile, SetupWrapper.class);
 	}
-	
+
 	/**
 	 * Verify if is loaded else throw a exception
 	 * @return
@@ -130,19 +131,19 @@ public class SetupLoader {
 		CLogMgt.setLevel(logLevel);
 		DB.setDBTarget(connection);
 	}
-	
-	
+
+
 	/**
 	 * @return
-	 * @see org.spin.template.setup.SetupWrapper#getDatabase()
+	 * @see org.spin.pos.homologation.setup.SetupWrapper#getDatabase()
 	 */
 	public final Database getDatabase() {
 		return setup.getDatabase();
 	}
-	
+
 	/**
 	 * @return
-	 * @see org.spin.template.setup.SetupWrapper#getServer()
+	 * @see org.spin.pos.homologation.setup.SetupWrapper#getServer()
 	 */
 	public final Server getServer() {
 		return setup.getServer();
@@ -155,7 +156,7 @@ public class SetupLoader {
 	public static SetupLoader getInstance() {
 		return instance;
 	}
-	
+
 	/**
 	 * Load instance from file
 	 * @param filePath
@@ -166,4 +167,5 @@ public class SetupLoader {
 	public static void loadSetup(String filePath) throws JsonParseException, JsonMappingException, IOException {
 		instance = new SetupLoader(filePath);
 	}
+
 }

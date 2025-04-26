@@ -12,7 +12,7 @@ on:
 
 jobs:
 
-  # Build dist application adempiere-grpc-template-service
+  # Build dist application pos-homologation-service
   build-app:
     name: Build dist Template
     runs-on: ubuntu-latest
@@ -44,35 +44,35 @@ jobs:
       - name: Upload descriptor file artifact
         uses: actions/upload-artifact@v4
         with:
-          name: adempiere-grpc-template-service.dsc
-          path: build/descriptors/adempiere-grpc-template-service.dsc
+          name: pos-homologation-service.dsc
+          path: build/descriptors/pos-homologation-service.dsc
 
       - name: Upload dist app zip artifact
         uses: actions/upload-artifact@v4
         with:
-          name: adempiere-grpc-template-service.zip
-          path: build/release/adempiere-grpc-template-service.zip
+          name: pos-homologation-service.zip
+          path: build/release/pos-homologation-service.zip
 
       - name: Upload dist app zip.MD5 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: adempiere-grpc-template-service.zip.MD5
-          path: build/release/adempiere-grpc-template-service.zip.MD5
+          name: pos-homologation-service.zip.MD5
+          path: build/release/pos-homologation-service.zip.MD5
 
       - name: Upload dist app tar artifact
         uses: actions/upload-artifact@v4
         with:
-          name: adempiere-grpc-template-service.tar
-          path: build/release/adempiere-grpc-template-service.tar
+          name: pos-homologation-service.tar
+          path: build/release/pos-homologation-service.tar
 
       - name: Upload dist app tar.MD5 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: adempiere-grpc-template-service.tar.MD5
-          path: build/release/adempiere-grpc-template-service.tar.MD5
+          name: pos-homologation-service.tar.MD5
+          path: build/release/pos-homologation-service.tar.MD5
 
   publish-binaries:
-    name: Upload Binaries adempiere-grpc-template-service
+    name: Upload Binaries pos-homologation-service
     needs: build-app
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
@@ -87,35 +87,35 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: adempiere-grpc-template-service.dsc/adempiere-grpc-template-service.dsc
+          args: pos-homologation-service.dsc/pos-homologation-service.dsc
 
       - name: Upload zip
         uses: skx/github-action-publish-binaries@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: adempiere-grpc-template-service.zip/adempiere-grpc-template-service.zip
+          args: pos-homologation-service.zip/pos-homologation-service.zip
 
       - name: Upload zip.MD5
         uses: skx/github-action-publish-binaries@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: adempiere-grpc-template-service.zip.MD5/adempiere-grpc-template-service.zip.MD5
+          args: pos-homologation-service.zip.MD5/pos-homologation-service.zip.MD5
 
       - name: Upload tar
         uses: skx/github-action-publish-binaries@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: adempiere-grpc-template-service.tar/adempiere-grpc-template-service.tar
+          args: pos-homologation-service.tar/pos-homologation-service.tar
 
       - name: Upload tar.MD5
         uses: skx/github-action-publish-binaries@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: adempiere-grpc-template-service.tar.MD5/adempiere-grpc-template-service.tar.MD5
+          args: pos-homologation-service.tar.MD5/pos-homologation-service.tar.MD5
 
 
 
@@ -156,10 +156,10 @@ jobs:
       - name: Download build dist app
         uses: actions/download-artifact@v4
         with:
-          name: adempiere-grpc-template-service.zip
+          name: pos-homologation-service.zip
       - name: Unzip Asset
         run: |
-          unzip adempiere-grpc-template-service.zip -d docker/
+          unzip pos-homologation-service.zip -d docker/
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -191,10 +191,10 @@ jobs:
       - name: Download build dist app
         uses: actions/download-artifact@v4
         with:
-          name: adempiere-grpc-template-service.zip
+          name: pos-homologation-service.zip
       - name: Unzip Asset
         run: |
-          unzip adempiere-grpc-template-service.zip -d docker/
+          unzip pos-homologation-service.zip -d docker/
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -257,7 +257,7 @@ jobs:
       - name: Download descriptor app
         uses: actions/download-artifact@v4
         with:
-          name: adempiere-grpc-template-service.dsc
+          name: pos-homologation-service.dsc
           path: docker/
 
       - name: Set up QEMU

@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+option java_package = "org.spin.proto.pos.homologation";
+option java_multiple_files = true;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+package pos.homologation;
+
+// System Info
+message GetSystemInfoRequest {
+	// empty request
+}
+message SystemInfo {
+	// pos homologation
+	google.protobuf.Timestamp date_version = 1;
+	string main_version = 2;
+	string implementation_version = 3;
+}
+
+
+// Request for process a order
+message ProcessOrderRequest {
+	int32 pos_id = 1;
+	int32 id = 2;
+	bool create_payments = 3;
+	bool is_open_refund = 4;
+}
+
+
+// Request for simulate process a order
+message SimulateProcessOrderRequest {
+	int32 pos_id = 1;
+	int32 id = 2;
+	bool create_payments = 3;
+	bool is_open_refund = 4;
+}
+
+
+//	Print Ticket
+message PrintWihtoutProcessRequest {
+	int32 pos_id = 1;
+	int32 order_id = 2;
+	int32 invoice_id = 3;
+}
+
+
+//	Response after print
+message PrintTicketResponse {
+	string summary = 1;
+	bool is_error = 2;
+	string file_name = 3;
+	string mime_type = 4;
+	bytes output_stream = 5;
+	string result_type = 6;
+	google.protobuf.Value result_values = 7;
+}
+
+
+// The greeting service definition.
+service PosHomologationService {
+	// Get a System Information
+	rpc GetSystemInfo(GetSystemInfoRequest) returns (SystemInfo) {
+		option (google.api.http) = {
+			get: "/v1/pos/homologation/system-info"
+		};
+	}
+
+	// Process Order
+	rpc SimulateProcessOrder(SimulateProcessOrderRequest) returns (PrintTicketResponse) {
+		option (google.api.http) = {
+			post: "/v1/pos/homologation/{table_name}",
+			body: "*"
+		};
+	}
+
+	// rpc ProcessOrder(ProcessOrderRequest) returns (Order) {
+	// 	option (google.api.http) = {
+	// 		put: "/point-of-sales/{pos_id}/orders/{id}/process",
+	// 		body: "*"
+	// 	};
+	// }
+
+	//	Print Ticket
+	rpc PrintWihtoutProcess(PrintWihtoutProcessRequest) returns (PrintTicketResponse) {
+		option (google.api.http) = {
+			post: "/point-of-sales/{pos_id}/print-ticket",
+			body: "*"
+		};
+	}
+}

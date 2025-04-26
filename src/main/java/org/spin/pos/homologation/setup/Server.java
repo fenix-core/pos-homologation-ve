@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License                 *
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.            *
  ************************************************************************************/
-package org.spin.template.setup;
+package org.spin.pos.homologation.setup;
 
 import java.util.List;
 import java.util.logging.Level;
@@ -23,6 +23,7 @@ import java.util.logging.Level;
  * @author Yamel Senih
  */
 public class Server {
+
 	/**	Host Name	*/
 	private String host;
 	/**	Port	*/
@@ -37,6 +38,7 @@ public class Server {
 	private String log_level;
 	/**	Embedded services	*/
 	private List<String> services;
+
 	/**
 	 * Default constructor
 	 * @param host
@@ -61,7 +63,7 @@ public class Server {
 			this.log_level = Level.WARNING.getName();
 		}
 	}
-	
+
 	/**
 	 * Default constructor without parameters
 	 */
@@ -111,7 +113,7 @@ public class Server {
 		return getCertificate_chain_file() != null 
 				&& getPrivate_key_file() != null;
 	}
-	
+
 	/**
 	 * Get Services
 	 * @return
@@ -146,8 +148,14 @@ public class Server {
 
 	@Override
 	public String toString() {
-		return "Server [host=" + host + ", port=" + port + ", certificate_chain_file=" + certificate_chain_file
-				+ ", private_key_file=" + private_key_file + ", trust_certificate_collection_file="
-				+ trust_certificate_collection_file + ", log_level=" + log_level + ", services=" + services + "]";
+		return "Server [host=" + host
+			+ ", port=" + port
+			+ ", certificate_chain_file=" + certificate_chain_file
+			+ ", private_key_file=" + private_key_file
+			+ ", trust_certificate_collection_file=" + trust_certificate_collection_file
+			+ ", log_level=" + log_level
+			+ ", services=" + services + "]"
+		;
 	}
+
 }
