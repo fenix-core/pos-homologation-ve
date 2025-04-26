@@ -40,7 +40,7 @@ message SimulateProcessOrderRequest {
 
 
 //	Print Ticket
-message PrintWihtoutProcessRequest {
+message ProcessWithoutPrintRequest {
 	int32 pos_id = 1;
 	int32 order_id = 2;
 	int32 invoice_id = 3;
@@ -83,10 +83,10 @@ service PosHomologationService {
 	// 	};
 	// }
 
-	//	Print Ticket
-	rpc PrintWihtoutProcess(PrintWihtoutProcessRequest) returns (PrintTicketResponse) {
+	//	Process without Print
+	rpc ProcessWithoutPrint(ProcessWithoutPrintRequest) returns (PrintTicketResponse) {
 		option (google.api.http) = {
-			post: "/point-of-sales/{pos_id}/print-ticket",
+			post: "/point-of-sales/{pos_id}/process",
 			body: "*"
 		};
 	}
