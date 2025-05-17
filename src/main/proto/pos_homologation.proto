@@ -99,8 +99,8 @@ message Address {
 	string description = 19;
 	string first_name = 20;
 	string last_name = 21;
-	// map<string, data.Value> additional_attributes = 22;
-	google.protobuf.Struct additional_attributes = 22;
+	map<string, data.Value> additional_attributes = 22;
+	// google.protobuf.Struct additional_attributes = 22;
 }
 // Customer
 message Customer {
@@ -114,8 +114,8 @@ message Customer {
 	string last_name = 8;
 	string description = 9;
 	repeated Address addresses = 10;
-	// map<string, data.Value> additional_attributes = 11;
-	google.protobuf.Struct additional_attributes = 11;
+	map<string, data.Value> additional_attributes = 11;
+	// google.protobuf.Struct additional_attributes = 11;
 }
 
 // Sales Order
@@ -209,8 +209,8 @@ message PrintTicketResponse {
 	string mime_type = 4;
 	bytes output_stream = 5;
 	string result_type = 6;
-	// map<string, string> result_values = 7;
-	google.protobuf.Value result_values = 7;
+	map<string, string> result_values = 7;
+	// google.protobuf.Value result_values = 7;
 }
 
 
