@@ -32,7 +32,7 @@ on:
 jobs:
 
   build-ci:
-    name: Build Template
+    name: Build with Gradle
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
