@@ -1,10 +1,10 @@
 static_resources:
   listeners:
-  - name: adempiere_template_transcoding_proxy
+  - name: pos_homologation_proxy
     address:
       socket_address: {
         address: 0.0.0.0,
-        port_value: 5555
+        port_value: 5565
       }
     per_connection_buffer_limit_bytes: 94371840 # 90 MiB
     filter_chains:
@@ -28,7 +28,7 @@ static_resources:
                   grpc: {}
                 }
                 route: {
-                  cluster: adempiere_template_cluster,
+                  cluster: pos_homologation_cluser,
                   timeout: 60s
                 }
           http_filters:
@@ -51,7 +51,7 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
-  - name: adempiere_template_cluster
+  - name: pos_homologation_cluser
     type: LOGICAL_DNS
     lb_policy: ROUND_ROBIN
     dns_lookup_family: V4_ONLY
@@ -61,7 +61,7 @@ static_resources:
         explicit_http_config:
           http2_protocol_options: {}
     load_assignment:
-      cluster_name: adempiere_template_cluster
+      cluster_name: pos_homologation_cluser
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -70,5 +70,5 @@ static_resources:
                 # WARNING: "docker.for.mac.localhost" has been deprecated from Docker v18.03.0.
                 # If you're running an older version of Docker, please use "docker.for.mac.localhost" instead.
                 # Reference: https://docs.docker.com/docker-for-mac/release-notes/#docker-community-edition-18030-ce-mac59-2018-03-26
-                address: adempiere.grpc.service # for local testing change for your ip
-                port_value: 50059
+                address: pos-homologation-service # for local testing change for your ip
+                port_value: 50065
