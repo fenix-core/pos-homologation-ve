@@ -3,7 +3,7 @@ name: homologation
 
 # Example API for images
 services:
-  # adempiere.database:
+  # adempiere-database:
   #   container_name: ${POSTGRES_HOST}
   #   image: ${POSTGRES_IMAGE}
   #   restart: ${GENERIC_RESTART}
@@ -23,11 +23,11 @@ services:
   #     TZ: 'America/Caracas'
   #     PGTZ: 'America/Caracas'
   #   networks:
-  #     - shared_network
+  #     - pos_homologation_network
 
 
 
-  adempiere.zk:
+  adempiere-zk:
     image: ${ADEMPIERE_ZK_IMAGE}
     container_name: ${ADEMPIERE_ZK_HOST}
     restart: ${GENERIC_RESTART}
@@ -37,16 +37,16 @@ services:
       ADEMPIERE_DB_NAME: ${ADEMPIERE_ZK_DB_NAME}
       ADEMPIERE_DB_PASSWORD: ${ADEMPIERE_ZK_DB_PASSWORD}
     # depends_on:
-    #   adempiere.database:
+    #   adempiere-database:
     #     condition: service_healthy
     ports:
       - ${ADEMPIERE_ZK_EXTERNAL_PORT}:${ADEMPIERE_ZK_INTERNAL_PORT}
     networks:
-      - shared_network
+      - pos_homologation_network
 
 
 
-  adempiere.grpc.service:
+  pos-homologation-service:
     image: ${GRPC_SERVER_IMAGE}
     container_name: ${GRPC_SERVER_HOST}
     restart: ${GENERIC_RESTART}
@@ -57,7 +57,7 @@ services:
       start_period: 20s
       timeout: 10s
     # depends_on:
-    #   adempiere.database:
+    #   adempiere-database:
     #     condition: service_healthy
     environment:
       SERVER_PORT: ${GRPC_SERVER_INTERNAL_PORT}
@@ -66,11 +66,11 @@ services:
       DB_NAME: ${GRPC_SERVER_DB_NAME}
       DB_PASSWORD: ${GRPC_SERVER_DB_PASSWORD}
     networks:
-      - shared_network
+      - pos_homologation_network
 
 
 
-  # grpc.proxy:
+  # voy-proxy-homologation:
   #   image: ${ENVOY_GRPC_PROXY_IMAGE}
   #   container_name: ${ENVOY_GRPC_PROXY_HOSTNAME}
   #   healthcheck:
@@ -83,14 +83,14 @@ services:
   #     - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
   #     - ./envoy/definitions/pos-homologation-service.dsc:/data/descriptor.dsc:ro
   #   depends_on:
-  #     - adempiere.grpc.service
+  #     - pos-homologation-service
   #   ports:
   #    - ${ENVOY_GRPC_PROXY_PORT}:${ENVOY_GRPC_PROXY_EXTERNAL_PORT}
   #   networks:
-  #   - shared_network
+  #   - pos_homologation_network
 
   # With repository (template)
-  grpc.proxy:
+  envoy-proxy-homologation:
     image: ${ENVOY_GRPC_PROXY_BACKEND_IMAGE}
     container_name: ${ENVOY_GRPC_PROXY_HOSTNAME}
     hostname: ${ENVOY_GRPC_PROXY_HOSTNAME}
@@ -105,45 +105,98 @@ services:
       BACKEND_HOST: ${ENVOY_GRPC_PROXY_BACKEND_SERVER_HOST}
       BACKEND_PORT: ${ENVOY_GRPC_PROXY_BACKEND_SERVER_PORT}
     depends_on:
-      - adempiere.grpc.service
+      - pos-homologation-service
     volumes:
       - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
       - ./envoy/definitions/pos-homologation-service.dsc:/data/descriptor.dsc:ro
     ports:
      - ${ENVOY_GRPC_PROXY_INTERNAL_PORT}:${ENVOY_GRPC_PROXY_EXTERNAL_PORT}
     networks:
-    - shared_network
+    - pos_homologation_network
 
 
 
-  ui.gateway:
+  vue-backend:
+    image: ${DEMOSENIAT_GRPC_SERVER_IMAGE}
+    container_name: ${DEMOSENIAT_GRPC_BACKEND_NAME}
+    restart: ${GENERIC_RESTART}
+    environment:
+      - DB_NAME=${DEMOSENIAT_GRPC_ADEMPIERE_DB_NAME}
+      - DB_HOST=${DEMOSENIAT_GRPC_ADEMPIERE_DB_HOST}
+      - DB_USER=${DEMOSENIAT_GRPC_ADEMPIERE_DB_USER}
+      - DB_PASSWORD=${DEMOSENIAT_GRPC_ADEMPIERE_DB_PASSWORD}
+      - DB_PORT=${DEMOSENIAT_GRPC_ADEMPIERE_DB_PORT}
+      - SERVER_LOG_LEVEL=${DEMOSENIAT_GRPC_SERVER_LOG_LEVEL}
+      - JAVA_OPTIONS=${DEMOSENIAT_GRPC_JAVA_OPTIONS}
+    deploy:
+      resources:
+        limits:
+          memory: '1000M' # Memory Limit
+          cpus: '1'
+    networks:
+      - pos_homologation_network
+
+  api-grpc-proxy:
+    image: ${DEMOSENIAT_VUE_API_IMAGE}
+    container_name: ${DEMOSENIAT_VUE_API_NAME}
+    restart: ${GENERIC_RESTART}
+    healthcheck:
+      # test: "bash -c 'printf \"GET /api/adempiere/ HTTP/1.1\\n\\n\" > /dev/tcp/127.0.0.1/8085/; exit $?;'"
+      # test: ["CMD", "curl", "-f", "http://127.0.0.1:8085/api/adempiere/"]
+      test: ["CMD", "curl", "-f", "http://${DEMOSENIAT_VUE_API_NAME}:8085/api/adempiere/"]
+      interval: 10s
+      retries: 60
+      start_period: 120s
+      timeout: 10s
+    environment:
+      - ES_HOST=${DEMOSENIAT_VUE_API_ES_HOST}
+      - ES_PORT=${DEMOSENIAT_VUE_API_ES_PORT}
+      - AD_ACCESSHOST=${DEMOSENIAT_GRPC_BACKEND_NAME}
+      - AD_STORE_ACCESS_HOST=${DEMOSENIAT_GRPC_BACKEND_NAME}
+      - AD_BUSINESSHOST=${DEMOSENIAT_GRPC_BACKEND_NAME}
+      - AD_DICTIONARYHOST=${DEMOSENIAT_GRPC_BACKEND_NAME}
+      - AD_ACCESSAPIHOST=${DEMOSENIAT_GRPC_BACKEND_NAME}
+      - AD_STORE_HOST=${DEMOSENIAT_GRPC_BACKEND_NAME}
+      - AD_DEFAULT_HOST=${DEMOSENIAT_GRPC_BACKEND_NAME}
+      - VS_ENV=${DEMOSENIAT_VUE_API_VS_ENV}
+      - INDEX=${DEMOSENIAT_VUE_API_INDEX}
+    deploy:
+      resources:
+        limits:
+          memory: '1600M' # Memory Limit
+          cpus: '1'
+    ports:
+      - ${DEMOSENIAT_VUE_API_PORT}:8085
+    networks:
+      - pos_homologation_network
+
+
+
+  ui-gateway:
     image: ${NGINX_UI_GATEWAY_IMAGE}
     container_name: ${NGINX_UI_GATEWAY_HOST}
     hostname: ${NGINX_UI_GATEWAY_HOST}
     depends_on:
-      grpc.proxy:
+      envoy-proxy-homologation:
+        condition: service_healthy
+      api-grpc-proxy:
         condition: service_healthy
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/api_json_errors.conf:/etc/nginx/api_json_errors.conf
       - ./nginx/gateway/api_gateway.conf:/etc/nginx/api_gateway.conf
-      # - ./nginx/gateway/api_gateway_vue.conf:/etc/nginx/api_gateway.conf
       #- ./keys/api_keys.conf:/etc/nginx/api_keys.conf
-      # zk ui
-      - ./nginx/upstreams/adempiere_zk.conf:/etc/nginx/api_upstreams_conf.d/adempiere_zk.conf
-      - ./nginx/api/main/:/etc/nginx/api_conf.d/
-      # grpc proxy
-      - ./nginx/upstreams/grpc_proxy.conf:/etc/nginx/api_upstreams_conf.d/grpc_proxy.conf
-      - ./nginx/api/grpc_proxy/:/etc/nginx/api_conf.d/grpc_proxy/
+      - ./nginx/api/:/etc/nginx/api_conf.d/
+      - ./nginx/upstreams/:/etc/nginx/api_upstreams_conf.d/
     ports:
       - ${NGINX_UI_GATEWAY_EXTERNAL_PORT}:${NGINX_UI_GATEWAY_INTERNAL_PORT}
     networks:
-      - shared_network
+      - pos_homologation_network
 
 
 
 networks:
-  shared_network:
+  pos_homologation_network:
     name: ${DEFAULT_NETWORK}
 
 volumes:
