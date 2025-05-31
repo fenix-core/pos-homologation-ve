@@ -1,4 +1,3 @@
-
 name: homologation
 
 # Example API for images
@@ -24,8 +23,6 @@ services:
   #     PGTZ: 'America/Caracas'
   #   networks:
   #     - pos_homologation_network
-
-
 
   adempiere-zk:
     image: ${ADEMPIERE_ZK_IMAGE}
@@ -65,10 +62,9 @@ services:
       DB_PORT: ${GRPC_SERVER_DB_PORT}
       DB_NAME: ${GRPC_SERVER_DB_NAME}
       DB_PASSWORD: ${GRPC_SERVER_DB_PASSWORD}
+      SECRET_KEY: ${GRPC_SERVER_SECRET_KEY}
     networks:
       - pos_homologation_network
-
-
 
   # voy-proxy-homologation:
   #   image: ${ENVOY_GRPC_PROXY_IMAGE}
@@ -110,9 +106,9 @@ services:
       - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
       - ./envoy/definitions/pos-homologation-service.dsc:/data/descriptor.dsc:ro
     ports:
-     - ${ENVOY_GRPC_PROXY_INTERNAL_PORT}:${ENVOY_GRPC_PROXY_EXTERNAL_PORT}
+      - ${ENVOY_GRPC_PROXY_INTERNAL_PORT}:${ENVOY_GRPC_PROXY_EXTERNAL_PORT}
     networks:
-    - pos_homologation_network
+      - pos_homologation_network
 
 
 
@@ -128,11 +124,12 @@ services:
       - DB_PORT=${DEMOSENIAT_GRPC_ADEMPIERE_DB_PORT}
       - SERVER_LOG_LEVEL=${DEMOSENIAT_GRPC_SERVER_LOG_LEVEL}
       - JAVA_OPTIONS=${DEMOSENIAT_GRPC_JAVA_OPTIONS}
+      - SECRET_KEY=${DEMOSENIAT_GRPC_SECRET_KEY}
     deploy:
       resources:
         limits:
-          memory: '1000M' # Memory Limit
-          cpus: '1'
+          memory: "1000M" # Memory Limit
+          cpus: "1"
     networks:
       - pos_homologation_network
 

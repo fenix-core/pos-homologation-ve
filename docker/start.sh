@@ -5,6 +5,8 @@
 # Set server values
 sed -i "s|50059|$SERVER_PORT|g" env.yaml
 sed -i "s|WARNING|$SERVER_LOG_LEVEL|g" env.yaml
+# TODO: Remove with System Configurator
+sed -i "s|fill_secret_key|$SECRET_KEY|g" env.yaml
 
 # Set data base conection values
 sed -i "s|adempiere_database_host|$DB_HOST|g" env.yaml
