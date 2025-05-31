@@ -43,47 +43,28 @@ services:
 
 
 
-  pos-homologation-service:
-    image: ${GRPC_SERVER_IMAGE}
-    container_name: ${GRPC_SERVER_HOST}
-    restart: ${GENERIC_RESTART}
-    healthcheck:
-      test: "bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/${GRPC_SERVER_INTERNAL_PORT}; exit $?;'"
-      interval: 10s
-      retries: 60
-      start_period: 20s
-      timeout: 10s
-    # depends_on:
-    #   adempiere-database:
-    #     condition: service_healthy
-    environment:
-      SERVER_PORT: ${GRPC_SERVER_INTERNAL_PORT}
-      DB_HOST: ${POSTGRES_HOST}
-      DB_PORT: ${GRPC_SERVER_DB_PORT}
-      DB_NAME: ${GRPC_SERVER_DB_NAME}
-      DB_PASSWORD: ${GRPC_SERVER_DB_PASSWORD}
-      SECRET_KEY: ${GRPC_SERVER_SECRET_KEY}
-    networks:
-      - pos_homologation_network
-
-  # voy-proxy-homologation:
-  #   image: ${ENVOY_GRPC_PROXY_IMAGE}
-  #   container_name: ${ENVOY_GRPC_PROXY_HOSTNAME}
+  # pos-homologation-service:
+  #   image: ${GRPC_SERVER_IMAGE}
+  #   container_name: ${GRPC_SERVER_HOST}
+  #   restart: ${GENERIC_RESTART}
   #   healthcheck:
-  #     test: "bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/${ENVOY_GRPC_PROXY_PORT}; exit $?;'"
+  #     test: "bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/${GRPC_SERVER_INTERNAL_PORT}; exit $?;'"
   #     interval: 10s
   #     retries: 60
   #     start_period: 20s
   #     timeout: 10s
-  #   volumes:
-  #     - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
-  #     - ./envoy/definitions/pos-homologation-service.dsc:/data/descriptor.dsc:ro
-  #   depends_on:
-  #     - pos-homologation-service
-  #   ports:
-  #    - ${ENVOY_GRPC_PROXY_PORT}:${ENVOY_GRPC_PROXY_EXTERNAL_PORT}
+  #   # depends_on:
+  #   #   adempiere-database:
+  #   #     condition: service_healthy
+  #   environment:
+  #     SERVER_PORT: ${GRPC_SERVER_INTERNAL_PORT}
+  #     DB_HOST: ${POSTGRES_HOST}
+  #     DB_PORT: ${GRPC_SERVER_DB_PORT}
+  #     DB_NAME: ${GRPC_SERVER_DB_NAME}
+  #     DB_PASSWORD: ${GRPC_SERVER_DB_PASSWORD}
+  #     SECRET_KEY: ${GRPC_SERVER_SECRET_KEY}
   #   networks:
-  #   - pos_homologation_network
+  #     - pos_homologation_network
 
   # With repository (template)
   envoy-proxy-homologation:
@@ -100,8 +81,8 @@ services:
       SERVER_PORT: ${ENVOY_GRPC_PROXY_INTERNAL_PORT}
       BACKEND_HOST: ${ENVOY_GRPC_PROXY_BACKEND_SERVER_HOST}
       BACKEND_PORT: ${ENVOY_GRPC_PROXY_BACKEND_SERVER_PORT}
-    depends_on:
-      - pos-homologation-service
+    # depends_on:
+    #   - pos-homologation-service
     volumes:
       - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
       - ./envoy/definitions/pos-homologation-service.dsc:/data/descriptor.dsc:ro
@@ -138,10 +119,9 @@ services:
     container_name: ${DEMOSENIAT_VUE_API_NAME}
     restart: ${GENERIC_RESTART}
     healthcheck:
-      # test: "bash -c 'printf \"GET /api/adempiere/ HTTP/1.1\\n\\n\" > /dev/tcp/127.0.0.1/8085/; exit $?;'"
-      # test: ["CMD", "curl", "-f", "http://127.0.0.1:8085/api/adempiere/"]
-      test: ["CMD", "curl", "-f", "http://${DEMOSENIAT_VUE_API_NAME}:8085/api/adempiere/"]
-      interval: 10s
+      test:
+        ["CMD", "curl", "-f", "http://${DEMOSENIAT_VUE_API_NAME}:8085/api/adempiere/"]
+      interval: 100s
       retries: 60
       start_period: 120s
       timeout: 10s
@@ -160,8 +140,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: '1600M' # Memory Limit
-          cpus: '1'
+          memory: "1600M" # Memory Limit
+          cpus: "1"
     ports:
       - ${DEMOSENIAT_VUE_API_PORT}:8085
     networks:
