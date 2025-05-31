@@ -13,6 +13,8 @@ ENV \
 	DB_USER="adempiere" \
 	DB_PASSWORD="adempiere" \
 	DB_TYPE="PostgreSQL" \
+	# TODO: Remove with System Configurator
+	SECRET_KEY="changeme" \
 	IDLE_TIMEOUT="300" \
 	MINIMUM_IDLE="1" \
 	MAXIMUM_POOL_SIZE="10" \

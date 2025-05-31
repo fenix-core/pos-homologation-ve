@@ -15,7 +15,6 @@
  ************************************************************************************/
 package org.spin.pos.homologation.setup;
 
-import java.util.List;
 import java.util.logging.Level;
 
 /**
@@ -36,8 +35,8 @@ public class Server {
 	private String trust_certificate_collection_file;
 	/**	Log Level	*/
 	private String log_level;
-	/**	Embedded services	*/
-	private List<String> services;
+	/**	A Secret Key	*/
+	private String secret_key;
 
 	/**
 	 * Default constructor
@@ -48,16 +47,19 @@ public class Server {
 	 * @param trust_certificate_collection_file
 	 * @param log_level
 	 * @param adempiere_token
-	 * @param services
 	 */
-	public Server(String host, int port, String certificate_chain_file, String private_key_file, String trust_certificate_collection_file, String log_level, List<String> services) {
+	public Server(
+		String host, int port, String log_level,
+		String certificate_chain_file, String private_key_file, String trust_certificate_collection_file,
+		String secret_key
+	) {
 		this.host = host;
 		this.port = port;
 		this.certificate_chain_file = certificate_chain_file;
 		this.private_key_file = private_key_file;
 		this.trust_certificate_collection_file = trust_certificate_collection_file;
-		this.log_level = log_level;;
-		this.services = services;
+		this.log_level = log_level;
+		this.private_key_file = private_key_file;
 		if(this.log_level == null
 				|| this.log_level.trim().length() == 0) {
 			this.log_level = Level.WARNING.getName();
@@ -107,19 +109,19 @@ public class Server {
 	}
 
 	/**
+	 * Secret key
+	 * @return
+	 */
+	public String getSecret_key() {
+		return secret_key;
+	}
+
+	/**
 	 * @return the isTlsEnabled
 	 */
 	public final boolean isTlsEnabled() {
 		return getCertificate_chain_file() != null 
 				&& getPrivate_key_file() != null;
-	}
-
-	/**
-	 * Get Services
-	 * @return
-	 */
-	public final List<String> getServices() {
-		return services;
 	}
 
 	/**
@@ -130,21 +132,6 @@ public class Server {
 		return log_level;
 	}
 
-	/**
-	 * Validate is a service is enabled
-	 * @param service
-	 * @return
-	 */
-	public final boolean isValidService(String service) {
-		if(service == null
-				|| service.trim().length() == 0
-				|| services == null) {
-			return false;
-		}
-		return getServices()
-			.stream()
-			.filter(serviceToFind -> serviceToFind != null && serviceToFind.equals(service)).findFirst().isPresent();
-	}
 
 	@Override
 	public String toString() {
@@ -153,8 +140,7 @@ public class Server {
 			+ ", certificate_chain_file=" + certificate_chain_file
 			+ ", private_key_file=" + private_key_file
 			+ ", trust_certificate_collection_file=" + trust_certificate_collection_file
-			+ ", log_level=" + log_level
-			+ ", services=" + services + "]"
+			+ ", log_level=" + log_level + "]"
 		;
 	}
 

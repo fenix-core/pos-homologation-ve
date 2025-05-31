@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.compiere.util.Env;
+import org.compiere.util.Ini;
+import org.spin.eca52.util.JWTUtil;
 import org.spin.pos.homologation.controller.PosHomologationService;
 import org.spin.pos.homologation.setup.SetupLoader;
 import org.spin.service.grpc.authentication.AuthorizationServerInterceptor;
@@ -103,6 +105,12 @@ public class PosHomologationServer {
 		// Validate JWT on all requests
 		AuthorizationServerInterceptor interceptor = getInterceptor();
 		serverBuilder.intercept(interceptor);
+
+		// TODO: Remove added with system configurator
+		Ini.setProperty(
+			JWTUtil.ECA52_JWT_SECRET_KEY,
+			SetupLoader.getInstance().getServer().getSecret_key()
+		);
 
 		serverBuilder.addService(new PosHomologationService());
 		this.server = serverBuilder.build().start();
