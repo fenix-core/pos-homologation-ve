@@ -14,19 +14,29 @@
  ************************************************************************************/
 package org.spin.pos.homologation.service;
 
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MInvoice;
 import org.compiere.model.MOrder;
 import org.compiere.model.MPOS;
+import org.compiere.util.Env;
+import org.compiere.util.Trx;
 import org.spin.base.Version;
 import org.spin.base.util.ConvertUtil;
 import org.spin.pos.service.order.OrderManagement;
 import org.spin.pos.service.order.OrderUtil;
 import org.spin.proto.pos.homologation.Order;
+import org.spin.proto.pos.homologation.PrintTicketResponse;
 import org.spin.proto.pos.homologation.ProcessWithoutPrintRequest;
+import org.spin.proto.pos.homologation.SimulateProcessOrderRequest;
 import org.spin.proto.pos.homologation.SystemInfo;
 import org.spin.service.grpc.util.value.StringManager;
 import org.spin.service.grpc.util.value.TimeManager;
 import org.spin.service.grpc.util.value.ValueManager;
 import org.spin.service.pos.POS;
+import org.spin.support.FiscalPrintLocalAPI;
 
 public class Service {
 
@@ -52,6 +62,44 @@ public class Service {
 				)
 			)
 		;
+		return builder;
+	}
+
+
+	public static PrintTicketResponse.Builder simulateProcessOrder(SimulateProcessOrderRequest request) {
+		PrintTicketResponse.Builder builder = PrintTicketResponse.newBuilder();
+		MPOS pos = POS.validateAndGetPOS(request.getPosId(), true);
+		OrderUtil.validateAndGetOrder(request.getId());
+
+		AtomicReference<MInvoice> invoiceReference = new AtomicReference<MInvoice>();
+		Trx.run(transactionName -> {
+			MOrder salesOrder = null;
+			MInvoice salesInvoice = null;
+			try {
+				salesOrder = OrderManagement.processOrder(
+					pos,
+					request.getId(),
+					request.getIsOpenRefund()
+				);
+				int invoiceId = salesOrder.getC_Invoice_ID();
+				if (invoiceId > 0) {
+					MInvoice invoice = new MInvoice(Env.getCtx(), invoiceId, transactionName);
+					invoiceReference.set(invoice);
+					// FiscalDocument invoiceDocument = new FiscalDocument(salesInvoice);
+					FiscalPrintLocalAPI fiscalPrintApi = FiscalPrintLocalAPI.newInstance();
+					Map<String, Object> printDocument = fiscalPrintApi.printFiscalDocument(invoice);
+					System.out.println(printDocument);
+				}
+				throw new AdempiereException("VeryGood");
+			} catch (Exception e) {
+				if (e.getMessage().equals("VeryGood")) {
+					// nothing here
+				} else {
+					throw new AdempiereException(e);
+				}
+			}
+		});
+
 		return builder;
 	}
 

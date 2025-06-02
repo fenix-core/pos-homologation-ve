@@ -54,7 +54,7 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 	@Override
 	public void simulateProcessOrder(SimulateProcessOrderRequest request, StreamObserver<PrintTicketResponse> responseObserver) {
 		try {
-			PrintTicketResponse.Builder builder = PrintTicketResponse.newBuilder();
+			PrintTicketResponse.Builder builder = Service.simulateProcessOrder(request);
 			responseObserver.onNext(
 				builder.build()
 			);
@@ -74,7 +74,7 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 	@Override
 	public void processWithoutPrint(ProcessWithoutPrintRequest request, StreamObserver<Order> responseObserver) {
 		try {
-			Order.Builder builder = Order.newBuilder();
+			Order.Builder builder = Service.processWithoutPrint(request);
 			responseObserver.onNext(
 				builder.build()
 			);
