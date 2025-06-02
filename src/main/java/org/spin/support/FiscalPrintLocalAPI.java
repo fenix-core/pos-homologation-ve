@@ -15,37 +15,23 @@
  * Contributor(s): Yamel Senih www.erpya.com                                  *
  *****************************************************************************/
 package org.spin.support;
-import java.net.InetAddress;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.adempiere.exceptions.AdempiereException;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
+// import org.apache.kafka.clients.producer.ProducerRecord;
 import org.adempiere.core.domains.models.I_C_Invoice;
-import org.compiere.Adempiere;
-import org.compiere.db.CConnection;
-import org.compiere.model.MClient;
 import org.compiere.model.MClientInfo;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MOrg;
 import org.compiere.model.Query;
 import org.compiere.util.CLogger;
-import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
-import org.compiere.util.Msg;
-import org.compiere.util.TimeUtil;
 import org.compiere.util.Trx;
 import org.compiere.util.Util;
 import org.spin.fp.util.event.PrinterEvent;
@@ -57,11 +43,7 @@ import org.spin.support.fp.FiscalReport;
 import org.spin.support.fp.FiscalSetup;
 import org.spin.support.fp.FiscalSetup.SetupType;
 import org.spin.support.fp.IFiscalPrinterResponse;
-import org.spin.support.fp.NonFiscalDocument;
-import org.spin.tools.kafka.util.KafkaLoader;
-import org.spin.tools.kafka.util.MapDeserializer;
 import org.spin.util.fp.FiscalPrinterUtil;
-import org.spin.util.fp.SupportedCommand;
 import org.spin.util.text.DataUtils;
 
 /**
@@ -72,74 +54,81 @@ import org.spin.util.text.DataUtils;
 public class FiscalPrintLocalAPI
 {
 
-	/**	Registration Id	*/
-	private int registrationId = 0;
+	// /**	Registration Id	*/
+	// private int registrationId = 0;
 	/** Static Logger					*/
 	private CLogger log = CLogger.getCLogger (FiscalPrintLocalAPI.class);
-	/**	Port	*/
-	private int port;
+	// /**	Port	*/
+	// private int port;
 	/**	Printer Name	*/
 	private String printerName = null;
-	/**	Printer Response Name	*/
-	private String printerResponseName = null;
+	// /**	Printer Response Name	*/
+	// private String printerResponseName = null;
 	/**	Port Name	*/
 	private String portName = null;
 	/**	Printer Model	*/
 	private String printerModel = null;
-	/**	Host	*/
-	private String host = null;
-	/**	Timeout	*/
-	private int defaultTimeout = 0;
+	// /**	Host	*/
+	// private String host = null;
+	// /**	Timeout	*/
+	// private int defaultTimeout = 0;
 	/**	Printer Name	*/
 	private final String PRINTER_NAME = "printer_name";
 	/**	Printer Response Name	*/
 	private final String PRINTER_RESPONSE_NAME = "printer_response_name";
-	/**	Port Name		*/
-	private final String PORT_NAME = "port_name";
-	/**	Read response Automatically	*/
-	private boolean readResponseAfterSend = false;
+	// /**	Port Name		*/
+	// private final String PORT_NAME = "port_name";
+	// /**	Read response Automatically	*/
+	// private boolean readResponseAfterSend = false;
 	/**	Date formatter	*/
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-    /**	Application Type	*/
-    private String applicationType = null;
+    // /**	Application Type	*/
+    // private String applicationType = null;
     /**	Client Info	*/
     private MClientInfo clientInfo;
-	
-	// @Override
-	public String testConnection() {
-		//	Send X Report
-		printFiscalReport(new FiscalReport(SupportedCommand.X_Report));
-		return "Ok";
+
+
+
+	public static FiscalPrintLocalAPI newInstance() {
+		return new FiscalPrintLocalAPI();
 	}
 
-	// @Override
-	public void setAppRegistrationId(int registrationId) {
-		this.registrationId = registrationId;
-		MADAppRegistration registration = MADAppRegistration.getById(Env.getCtx(), getAppRegistrationId(), null);
-		applicationType = registration.getApplicationType();
-		port = registration.getPort();
-		host = registration.getHost();
-		portName = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_LocalPort);
-		printerModel = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_Model);
-		if(!Util.isEmpty(portName)) {
-			if(portName.equals(FiscalPrinterUtil.COLUMNNAME_CUSTOM_PORT)) {
-				portName = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_CustomLocalPort);
-			}
-		}
-		if(Util.isEmpty(portName)) {
-			portName = registration.getParameterValue(PORT_NAME);
-		}
-		printerName = getPrinterName(registration);
-		printerResponseName = getPrinterResponseName(registration);
-		defaultTimeout = registration.getTimeout();
-		readResponseAfterSend = registration.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ReadResponseAfterSend);
-		clientInfo = MClientInfo.get(registration.getCtx(), registration.getAD_Client_ID());
-	}
 
-	// @Override
-	public int getAppRegistrationId() {
-		return registrationId;
-	}
+	// // @Override
+	// public String testConnection() {
+	// 	//	Send X Report
+	// 	printFiscalReport(new FiscalReport(SupportedCommand.X_Report));
+	// 	return "Ok";
+	// }
+
+	// // @Override
+	// public void setAppRegistrationId(int registrationId) {
+	// 	this.registrationId = registrationId;
+	// 	MADAppRegistration registration = MADAppRegistration.getById(Env.getCtx(), getAppRegistrationId(), null);
+	// 	applicationType = registration.getApplicationType();
+	// 	port = registration.getPort();
+	// 	host = registration.getHost();
+	// 	portName = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_LocalPort);
+	// 	printerModel = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_Model);
+	// 	if(!Util.isEmpty(portName)) {
+	// 		if(portName.equals(FiscalPrinterUtil.COLUMNNAME_CUSTOM_PORT)) {
+	// 			portName = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_CustomLocalPort);
+	// 		}
+	// 	}
+	// 	if(Util.isEmpty(portName)) {
+	// 		portName = registration.getParameterValue(PORT_NAME);
+	// 	}
+	// 	printerName = getPrinterName(registration);
+	// 	printerResponseName = getPrinterResponseName(registration);
+	// 	defaultTimeout = registration.getTimeout();
+	// 	readResponseAfterSend = registration.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ReadResponseAfterSend);
+	// 	clientInfo = MClientInfo.get(registration.getCtx(), registration.getAD_Client_ID());
+	// }
+
+	// // @Override
+	// public int getAppRegistrationId() {
+	// 	return registrationId;
+	// }
 
 	private boolean showSalesRep() {
 		return clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowSalesRep);
@@ -473,14 +462,20 @@ public class FiscalPrintLocalAPI
 		});
 		return lines;
 	}
-	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	// @Override
-	public void printFiscalDocument(FiscalDocument fiscalDocument) {
+
+
+	public Map<String, Object> printFiscalDocument(MInvoice invoiceDocument) {
+		Map<String, Object> document = this.printFiscalDocument(
+			new FiscalDocument(invoiceDocument)
+		);
+		return document;
+	}
+
+
+	public Map<String, Object> printFiscalDocument(FiscalDocument fiscalDocument) {
 		log.fine("Fiscal Document: " + fiscalDocument);
+		Map<String, Object> document = new HashMap<String, Object>();
 		try {
-			KafkaProducer producer = KafkaLoader.getInstance().getProducer(host + ":" + port, printerName);
-			Map<String, Object> document = new HashMap<String, Object>();
 			document.put("printer_name", printerName);
 			if(!Util.isEmpty(portName)) {
 				document.put("port_name", portName);
@@ -497,44 +492,20 @@ public class FiscalPrintLocalAPI
 			//	Invoice Payments
 			document.put("payments", getInvoicePayments(fiscalDocument));
 			//	
-			final ProducerRecord record = new ProducerRecord<String, Map<String , Object>>(printerName, "fiscal_printer_document", document);
-			producer.send(record);
-			readPrinterResponses();
+			// final ProducerRecord record = new ProducerRecord<String, Map<String , Object>>(printerName, "fiscal_printer_document", document);
+			// producer.send(record);
+			// readPrinterResponses();
 		} catch (Exception e) {
 			throw new AdempiereException(e);
 		}
-	}
-	
-	/**
-	 * Read printer queue for responses
-	 * @return void
-	 */
-	private void readPrinterResponses() {
-		if(!readResponseAfterSend) {
-			return;
-		}
-		//	Read last response from printer
-		Trx.run(transactionName -> {
-			try {
-				readFromQueues(Env.getCtx(), transactionName, false, Duration.ofSeconds(0));
-			} catch (Exception e) {
-				log.warning(e.getLocalizedMessage());
-			}
-		});
+		return document;
 	}
 
-	// @Override
-	public void printNonDocument(NonFiscalDocument nonFiscalDocument) {
-		log.fine("Non Fiscal Document: " + nonFiscalDocument);
-		readPrinterResponses();
-	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	// @Override
+
 	public void printFiscalReport(FiscalReport fiscalReport) {
 		log.fine("Fiscal Report: " + fiscalReport);
 		try {
-			KafkaProducer producer = KafkaLoader.getInstance().getProducer(host + ":" + port, printerName);
 			Map<String, Object> report = new HashMap<String, Object>();
 			report.put("printer_name", printerName);
 			if(!Util.isEmpty(portName)) {
@@ -595,21 +566,15 @@ public class FiscalPrintLocalAPI
 					report.put("historic_document_type", "historic_document_type_summarized");
 				}
 			}
-			//	
-			final ProducerRecord record = new ProducerRecord<String, Map<String , Object>>(printerName, "fiscal_printer_report", report);
-			producer.send(record);
-			readPrinterResponses();
+			//
 		} catch (Exception e) {
 			throw new AdempiereException(e);
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	// @Override
 	public void setupFiscalPrint(FiscalSetup setupCommand) {
 		log.fine("Fiscal setup: " + setupCommand);
 		try {
-			KafkaProducer producer = KafkaLoader.getInstance().getProducer(host + ":" + port, printerName);
 			Map<String, Object> setup = new HashMap<String, Object>();
 			setup.put("printer_name", printerName);
 			if(!Util.isEmpty(portName)) {
@@ -643,9 +608,7 @@ public class FiscalPrintLocalAPI
 				setup.put("type", "firmware_set_values");
 				setup.put("firmware_version", setupCommand.getFirmwareVersion());
 			}
-			final ProducerRecord record = new ProducerRecord<String, Map<String , Object>>(printerName, "fiscal_printer_setup", setup);
-			producer.send(record);
-			readPrinterResponses();
+			// final ProducerRecord record = new ProducerRecord<String, Map<String , Object>>(printerName, "fiscal_printer_setup", setup);
 		} catch (Exception e) {
 			throw new AdempiereException(e);
 		}
@@ -756,7 +719,7 @@ public class FiscalPrintLocalAPI
 	 * @return
 	 * @return String
 	 */
-	private String getPrinterResponseName(MADAppRegistration fiscalPrinter) {
+	public String getPrinterResponseName(MADAppRegistration fiscalPrinter) {
 		String printerName = getPrinterName(fiscalPrinter);
 		String printerResponseName = fiscalPrinter.getParameterValue(PRINTER_RESPONSE_NAME);
 		if(printerResponseName == null) {
@@ -775,99 +738,98 @@ public class FiscalPrintLocalAPI
 		return Optional.ofNullable(printerName).orElse("").replaceAll("[^-0-9A-Za-z]", "").toLowerCase();
 	}
 
-	// @Override
-	public String read(Properties context, String transactionName, boolean allQueues) throws Exception {
-		return readFromQueues(context, transactionName, allQueues, Duration.ofMillis(defaultTimeout));
-	}
-	
-	public String readFromQueues(Properties context, String transactionName, boolean allQueues, Duration timeout) throws Exception {
-		List<String> queues = new ArrayList<String>();
-		if(allQueues) {
-			new Query(context, MADAppRegistration.Table_Name, MADAppRegistration.COLUMNNAME_ApplicationType +  "=?", transactionName)
-			.setParameters(applicationType)
-			.setOrderBy(MADAppRegistration.COLUMNNAME_Value)
-			.getIDsAsList().forEach(fiscalPrinterId -> {
-				MADAppRegistration fiscalPrinter = MADAppRegistration.getById(context, fiscalPrinterId, transactionName);
-				String responseName = getPrinterResponseName(fiscalPrinter);
-				queues.add(responseName);
-			});
-		} else {
-			queues.add(printerResponseName);
-		}
-		String clientName = MClient.get(context).getValue() 
-				+ " - " + Adempiere.getVersion() 
-				+ " - " + CConnection.get().getDbHost() 
-				+ " - " + CConnection.get().getDbName()
-				+ " - " + InetAddress.getLocalHost().getHostName(); 
-		clientName = clientName.replaceAll("[^a-zA-Z0-9. ]", "-");
-		String completeUrl = host + ":" + port;
-		String errorMessage = Msg.parseTranslation(Env.getCtx(), "@Error@");
-		String errorSummary = Msg.parseTranslation(Env.getCtx(), "@SaveError@");
-		long startTime = System.currentTimeMillis();
-		AtomicInteger errors = new AtomicInteger();
-		AtomicInteger readed = new AtomicInteger();
-		Properties config = new Properties();
-		config.put(ConsumerConfig.CLIENT_ID_CONFIG, InetAddress.getLocalHost().getHostName());
-		config.put(ConsumerConfig.GROUP_ID_CONFIG, clientName);
-		config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, completeUrl);
-		config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-		config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, MapDeserializer.class.getName());
-		config.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
-		config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-		KafkaConsumer<String, Map<String , Object>> consumer = new KafkaConsumer<String, Map<String , Object>>(config);
-		consumer.subscribe(queues);
-		ConsumerRecords<String, Map<String , Object>> records = consumer.poll(timeout);
-		records.forEach(record -> {
-			if(record != null) {
-				try {
-					//	Call event
-					if(record.key().equals("fiscal_printer_document")) {
-						Map<String, Object> values = record.value();
-						FiscalDocumentResult result = FiscalDocumentResult.newInstance()
-								.withDocumentUuid((String) values.get("document_uuid"))
-								.withDocumentNo((String) values.get("document_no"))
-								.withClosingNo((String) values.get("closing_no"))
-								.withDocumentType(FiscalDocumentResult.DocumentType.INVOICE);
-						String documentType = (String) values.get("document_type");
-						if(documentType != null) {
-							if(documentType.equals("credit_memo")) {
-								result.withDocumentType(FiscalDocumentResult.DocumentType.CREDIT_MEMO);
-							} else if(documentType.equals("debit_memo")) {
-								result.withDocumentType(FiscalDocumentResult.DocumentType.DEBIT_MEMO);
-							} else if(documentType.equals("non_fiscal_document")) {
-								result.withDocumentType(FiscalDocumentResult.DocumentType.NON_FISCAL_DOCUMENT);
-							}
-						}
-						//	General Printer Data
-						if(values.get("fiscal_printer_serial_no") != null) {
-							result.withFiscalPrinterSerialNo((String) values.get("fiscal_printer_serial_no"));
-						}
-						//	Call action
-						// messageReceived(new PrinterEvent(this, result));
-						readed.addAndGet(1);
-					}
-				} catch (Exception e) {
-					errors.addAndGet(1);
-					addLog(errorMessage, errorSummary, e.getLocalizedMessage(), true);
-				}
-			}
-		});
-		consumer.commitSync();
-		consumer.unsubscribe();
-		consumer.close(Duration.ofSeconds(1));
-		long endTime = System.currentTimeMillis();
-		SimpleDateFormat format = DisplayType.getDateFormat(DisplayType.DateTime);
-		String message = Msg.parseTranslation(Env.getCtx(), 
-				"@Records@: " + readed.get() 
-				+ " @Errors@: " + errors.get() 
-				+ " @StartTime@: " + format.format(new Timestamp(startTime)) 
-				+ " @EndTime@: " + format.format(new Timestamp(startTime)) 
-				+ " @Duration@" + TimeUtil.formatElapsed(startTime - endTime));
-		//	Add to log
-		addLog(Msg.getMsg(Env.getCtx(), "Process"), Msg.getMsg(Env.getCtx(), "Summary"), message, false);
-		return message;
-	}
-	
+	// public String read(Properties context, String transactionName, boolean allQueues) throws Exception {
+	// 	return readFromQueues(context, transactionName, allQueues, Duration.ofMillis(defaultTimeout));
+	// }
+
+	// public String readFromQueues(Properties context, String transactionName, boolean allQueues, Duration timeout) throws Exception {
+	// 	List<String> queues = new ArrayList<String>();
+	// 	if(allQueues) {
+	// 		new Query(context, MADAppRegistration.Table_Name, MADAppRegistration.COLUMNNAME_ApplicationType +  "=?", transactionName)
+	// 		.setParameters(applicationType)
+	// 		.setOrderBy(MADAppRegistration.COLUMNNAME_Value)
+	// 		.getIDsAsList().forEach(fiscalPrinterId -> {
+	// 			MADAppRegistration fiscalPrinter = MADAppRegistration.getById(context, fiscalPrinterId, transactionName);
+	// 			String responseName = getPrinterResponseName(fiscalPrinter);
+	// 			queues.add(responseName);
+	// 		});
+	// 	} else {
+	// 		queues.add(printerResponseName);
+	// 	}
+	// 	String clientName = MClient.get(context).getValue() 
+	// 			+ " - " + Adempiere.getVersion() 
+	// 			+ " - " + CConnection.get().getDbHost() 
+	// 			+ " - " + CConnection.get().getDbName()
+	// 			+ " - " + InetAddress.getLocalHost().getHostName(); 
+	// 	clientName = clientName.replaceAll("[^a-zA-Z0-9. ]", "-");
+	// 	String completeUrl = host + ":" + port;
+	// 	String errorMessage = Msg.parseTranslation(Env.getCtx(), "@Error@");
+	// 	String errorSummary = Msg.parseTranslation(Env.getCtx(), "@SaveError@");
+	// 	long startTime = System.currentTimeMillis();
+	// 	AtomicInteger errors = new AtomicInteger();
+	// 	AtomicInteger readed = new AtomicInteger();
+	// 	Properties config = new Properties();
+	// 	config.put(ConsumerConfig.CLIENT_ID_CONFIG, InetAddress.getLocalHost().getHostName());
+	// 	config.put(ConsumerConfig.GROUP_ID_CONFIG, clientName);
+	// 	config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, completeUrl);
+	// 	config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+	// 	config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, MapDeserializer.class.getName());
+	// 	config.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
+	// 	config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+	// 	KafkaConsumer<String, Map<String , Object>> consumer = new KafkaConsumer<String, Map<String , Object>>(config);
+	// 	consumer.subscribe(queues);
+	// 	ConsumerRecords<String, Map<String , Object>> records = consumer.poll(timeout);
+	// 	records.forEach(record -> {
+	// 		if(record != null) {
+	// 			try {
+	// 				//	Call event
+	// 				if(record.key().equals("fiscal_printer_document")) {
+	// 					Map<String, Object> values = record.value();
+	// 					FiscalDocumentResult result = FiscalDocumentResult.newInstance()
+	// 							.withDocumentUuid((String) values.get("document_uuid"))
+	// 							.withDocumentNo((String) values.get("document_no"))
+	// 							.withClosingNo((String) values.get("closing_no"))
+	// 							.withDocumentType(FiscalDocumentResult.DocumentType.INVOICE);
+	// 					String documentType = (String) values.get("document_type");
+	// 					if(documentType != null) {
+	// 						if(documentType.equals("credit_memo")) {
+	// 							result.withDocumentType(FiscalDocumentResult.DocumentType.CREDIT_MEMO);
+	// 						} else if(documentType.equals("debit_memo")) {
+	// 							result.withDocumentType(FiscalDocumentResult.DocumentType.DEBIT_MEMO);
+	// 						} else if(documentType.equals("non_fiscal_document")) {
+	// 							result.withDocumentType(FiscalDocumentResult.DocumentType.NON_FISCAL_DOCUMENT);
+	// 						}
+	// 					}
+	// 					//	General Printer Data
+	// 					if(values.get("fiscal_printer_serial_no") != null) {
+	// 						result.withFiscalPrinterSerialNo((String) values.get("fiscal_printer_serial_no"));
+	// 					}
+	// 					//	Call action
+	// 					// messageReceived(new PrinterEvent(this, result));
+	// 					readed.addAndGet(1);
+	// 				}
+	// 			} catch (Exception e) {
+	// 				errors.addAndGet(1);
+	// 				addLog(errorMessage, errorSummary, e.getLocalizedMessage(), true);
+	// 			}
+	// 		}
+	// 	});
+	// 	consumer.commitSync();
+	// 	consumer.unsubscribe();
+	// 	consumer.close(Duration.ofSeconds(1));
+	// 	long endTime = System.currentTimeMillis();
+	// 	SimpleDateFormat format = DisplayType.getDateFormat(DisplayType.DateTime);
+	// 	String message = Msg.parseTranslation(Env.getCtx(), 
+	// 			"@Records@: " + readed.get() 
+	// 			+ " @Errors@: " + errors.get() 
+	// 			+ " @StartTime@: " + format.format(new Timestamp(startTime)) 
+	// 			+ " @EndTime@: " + format.format(new Timestamp(startTime)) 
+	// 			+ " @Duration@" + TimeUtil.formatElapsed(startTime - endTime));
+	// 	//	Add to log
+	// 	addLog(Msg.getMsg(Env.getCtx(), "Process"), Msg.getMsg(Env.getCtx(), "Summary"), message, false);
+	// 	return message;
+	// }
+
 	/**
 	 * Add log for server
 	 * @param importProcessor
@@ -876,7 +838,7 @@ public class FiscalPrintLocalAPI
 	 * @param textMessage
 	 * @param isError
 	 */
-	private void addLog(String header, String summary, String textMessage, boolean isError) {
+	public void addLog(String header, String summary, String textMessage, boolean isError) {
 		// MIMPProcessorLog log = new MIMPProcessorLog(importProcessor, summary);
 		// log.setReference(header);
 		// log.setTextMsg(textMessage);

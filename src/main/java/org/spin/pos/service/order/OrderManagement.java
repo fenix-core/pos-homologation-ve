@@ -58,7 +58,56 @@ import org.spin.pos.util.ColumnsAdded;
  * @author Yamel Senih, ysenih@erpya.com , http://www.erpya.com
  */
 public class OrderManagement {
-	
+
+	public static MOrder simulateProcessOrder(MPOS pos, int orderId, boolean isRefundOpen, String transactionName) {
+		if(orderId <= 0) {
+			throw new AdempiereException("@C_Order_ID@ @NotFound@");
+		}
+		MOrder salesOrder = new MOrder(Env.getCtx(), orderId, transactionName);
+		List<PO> paymentReferences = getPaymentReferences(salesOrder);
+		if(!OrderUtil.isValidOrder(salesOrder)) {
+			throw new AdempiereException("@ActionNotAllowedHere@");
+		}
+		if(DocumentUtil.isDrafted(salesOrder)) {
+			// In case the Order is Invalid, set to In Progress; otherwise it will not be completed
+			if (salesOrder.getDocStatus().equalsIgnoreCase(MOrder.STATUS_Invalid))  {
+				salesOrder.setDocStatus(MOrder.STATUS_InProgress);
+			}
+			boolean isOpenRefund = isRefundOpen;
+			if(getPaymentReferenceAmount(salesOrder, paymentReferences).compareTo(Env.ZERO) != 0) {
+				isOpenRefund = true;
+			}
+			//	Set default values
+			salesOrder.setDocAction(DocAction.ACTION_Complete);
+			OrderUtil.setCurrentDate(salesOrder);
+			salesOrder.saveEx();
+			//	Update Process if exists
+			if (!salesOrder.processIt(MOrder.DOCACTION_Complete)) {
+				throw new AdempiereException("@ProcessFailed@ :" + salesOrder.getProcessMsg());
+			}
+			//	Release Order
+			int invoiceId = salesOrder.getC_Invoice_ID();
+			if(invoiceId > 0) {
+				salesOrder.setIsInvoiced(true);
+			}
+			salesOrder.set_ValueOfColumn("AssignedSalesRep_ID", null);
+			salesOrder.saveEx();
+			processPayments(salesOrder, pos, isOpenRefund, transactionName);
+		} else {
+			boolean isOpenToRefund = isRefundOpen;
+			if(getPaymentReferenceAmount(salesOrder, paymentReferences).compareTo(Env.ZERO) != 0) {
+				isOpenToRefund = true;
+			}
+			processPayments(salesOrder, pos, isOpenToRefund, transactionName);
+		}
+		//	Process all references
+		processPaymentReferences(salesOrder, pos, paymentReferences, transactionName);
+
+		//	Create
+		return salesOrder;
+	}
+
+
 	public static MOrder processOrder(MPOS pos, int orderId, boolean isRefundOpen) {
 		AtomicReference<MOrder> orderReference = new AtomicReference<MOrder>();
 		Trx.run(transactionName -> {
@@ -109,6 +158,7 @@ public class OrderManagement {
 		});
 		return orderReference.get();
 	}
+
 
 	/**
 	 * Process Payment references
