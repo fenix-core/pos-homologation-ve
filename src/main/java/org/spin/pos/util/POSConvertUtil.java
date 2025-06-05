@@ -2,8 +2,9 @@ package org.spin.pos.util;
 
 import org.compiere.model.MCampaign;
 import org.compiere.util.Env;
-import org.spin.base.util.ValueUtil;
 import org.spin.proto.pos.homologation.Campaign;
+import org.spin.service.grpc.util.value.StringManager;
+import org.spin.service.grpc.util.value.TimeManager;
 
 public class POSConvertUtil {
 
@@ -21,29 +22,31 @@ public class POSConvertUtil {
 		if (campaign == null || campaign.getC_Campaign_ID() <= 0) {
 			return builder;
 		}
-		builder.setId(campaign.getC_Campaign_ID())
+		builder.setId(
+				campaign.getC_Campaign_ID()
+			)
 			.setUuid(
-				ValueUtil.validateNull(
+				StringManager.getValidString(
 					campaign.getUUID()
 				)
 			)
 			.setName(
-				ValueUtil.validateNull(
+				StringManager.getValidString(
 					campaign.getName()
 				)
 			)
 			.setDescription(
-				ValueUtil.validateNull(
+				StringManager.getValidString(
 					campaign.getDescription()
 				)
 			)
 			.setStartDate(
-				ValueUtil.getLongFromTimestamp(
+				TimeManager.getLongFromTimestamp(
 					campaign.getStartDate()
 				)
 			)
 			.setEndDate(
-				ValueUtil.getLongFromTimestamp(
+				TimeManager.getLongFromTimestamp(
 					campaign.getEndDate()
 				)
 			)

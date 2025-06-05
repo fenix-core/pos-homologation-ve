@@ -25,6 +25,7 @@ import org.compiere.util.Env;
 import org.compiere.util.Trx;
 import org.spin.base.Version;
 import org.spin.base.util.ConvertUtil;
+import org.spin.base.util.ValueUtil;
 import org.spin.pos.service.order.OrderManagement;
 import org.spin.pos.service.order.OrderUtil;
 import org.spin.proto.pos.homologation.Order;
@@ -38,7 +39,12 @@ import org.spin.service.grpc.util.value.ValueManager;
 import org.spin.service.pos.POS;
 import org.spin.support.FiscalPrintLocalAPI;
 
+import com.google.protobuf.Value;
+
 public class Service {
+
+	final private static String ITS_OK_SIMULATION = "_Its Ok_";
+
 
 	public static SystemInfo.Builder getSystemInfo() {
 		SystemInfo.Builder builder = SystemInfo.newBuilder();
@@ -72,33 +78,41 @@ public class Service {
 		OrderUtil.validateAndGetOrder(request.getId());
 
 		AtomicReference<MInvoice> invoiceReference = new AtomicReference<MInvoice>();
-		Trx.run(transactionName -> {
-			MOrder salesOrder = null;
-			MInvoice salesInvoice = null;
-			try {
-				salesOrder = OrderManagement.processOrder(
+		AtomicReference<MOrder> orderReference = new AtomicReference<MOrder>();
+		try {
+			Trx.run(transactionName -> {
+				MOrder salesOrder = OrderManagement.simulateProcessOrder(
 					pos,
 					request.getId(),
-					request.getIsOpenRefund()
+					request.getIsOpenRefund(),
+					transactionName
 				);
+				orderReference.set(salesOrder);
+				salesOrder.getDocStatus();
 				int invoiceId = salesOrder.getC_Invoice_ID();
 				if (invoiceId > 0) {
-					MInvoice invoice = new MInvoice(Env.getCtx(), invoiceId, transactionName);
-					invoiceReference.set(invoice);
-					// FiscalDocument invoiceDocument = new FiscalDocument(salesInvoice);
+					MInvoice salesInvoice = new MInvoice(Env.getCtx(), invoiceId, transactionName);
+					salesInvoice.getLines();
+					invoiceReference.set(salesInvoice);
 					FiscalPrintLocalAPI fiscalPrintApi = FiscalPrintLocalAPI.newInstance();
-					Map<String, Object> printDocument = fiscalPrintApi.printFiscalDocument(invoice);
-					System.out.println(printDocument);
+					Map<String, Object> printDocument = fiscalPrintApi.printFiscalDocument(
+						invoiceReference.get()
+					);
+					Value.Builder printDocumentBuilder = ValueUtil.getProtoValueFromObject(printDocument);
+					builder.setResultValues(printDocumentBuilder);
 				}
-				throw new AdempiereException("VeryGood");
-			} catch (Exception e) {
-				if (e.getMessage().equals("VeryGood")) {
-					// nothing here
-				} else {
-					throw new AdempiereException(e);
-				}
+
+				// Break this simulation and rollback all transactions
+				throw new AdempiereException(ITS_OK_SIMULATION);
+			});
+		} catch (Exception e) {
+			if (e.getMessage().equals(ITS_OK_SIMULATION)) {
+				// nothing here
+			} else {
+				e.printStackTrace();
+				throw new AdempiereException(e);
 			}
-		});
+		}
 
 		return builder;
 	}

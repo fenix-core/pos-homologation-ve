@@ -4,8 +4,8 @@ option java_package = "org.spin.proto.pos.homologation";
 option java_multiple_files = true;
 
 import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-// import "google/protobuf/struct.proto";
 
 import "base_data_type.proto";
 import "core_functionality.proto";
@@ -231,8 +231,8 @@ message PrintTicketResponse {
 	string mime_type = 4;
 	bytes output_stream = 5;
 	string result_type = 6;
-	map<string, string> result_values = 7;
-	// google.protobuf.Value result_values = 7;
+	// map<string, string> result_values = 7;
+	google.protobuf.Value result_values = 7;
 }
 
 

@@ -93,6 +93,10 @@ public class FiscalPrintLocalAPI
 		return new FiscalPrintLocalAPI();
 	}
 
+	public FiscalPrintLocalAPI() {
+		clientInfo = MClientInfo.get(Env.getCtx());
+	}
+
 
 	// // @Override
 	// public String testConnection() {
@@ -470,8 +474,6 @@ public class FiscalPrintLocalAPI
 		);
 		return document;
 	}
-
-
 	public Map<String, Object> printFiscalDocument(FiscalDocument fiscalDocument) {
 		log.fine("Fiscal Document: " + fiscalDocument);
 		Map<String, Object> document = new HashMap<String, Object>();
