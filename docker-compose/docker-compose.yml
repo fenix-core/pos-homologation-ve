@@ -147,6 +147,22 @@ services:
     networks:
       - pos_homologation_network
 
+  vue-ui:
+    image: ${DEMOSENIAT_VUE_UI_IMAGE}
+    container_name: ${DEMOSENIAT_VUE_UI_NAME}
+    restart: ${GENERIC_RESTART}
+    ports:
+      - 8050:80
+    environment:
+      - API_URL=${DEMOSENIAT_VUE_UI_API_URL}
+    deploy:
+      resources:
+        limits:
+          memory: '300M' # Memory Limit
+          cpus: '0.2'
+    networks:
+      - pos_homologation_network
+
 
 
   ui-gateway:
