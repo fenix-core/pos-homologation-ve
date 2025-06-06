@@ -218,8 +218,9 @@ message ProcessWithoutPrintRequest {
 	bool create_payments = 4;
 	bool is_open_refund = 5;
 	repeated CreatePaymentRequest payments = 6;
-	int32 invoice_id = 7;
-	string invoice_no = 8; // overwrite invoice
+	string fiscal_document_no = 7; // overwrite invoice
+	string fiscal_printer_serial_no = 8;
+	string closing_no = 9; // Z Report
 }
 
 
