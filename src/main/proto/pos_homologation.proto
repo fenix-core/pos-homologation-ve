@@ -17,7 +17,6 @@ message GetSystemInfoRequest {
 	// empty request
 }
 message SystemInfo {
-	// pos homologation
 	google.protobuf.Timestamp date_version = 1;
 	string main_version = 2;
 	string implementation_version = 3;
@@ -28,7 +27,7 @@ message SystemInfo {
 message SimulateProcessOrderRequest {
 	int32 pos_id = 1;
 	string pos_uuid = 2;
-	int32 id = 3;
+	int32 id = 3; // order identifier
 	bool create_payments = 4;
 	bool is_open_refund = 5;
 	repeated CreatePaymentRequest payments = 6;
@@ -69,6 +68,8 @@ message Campaign {
 	int64 end_date = 6;
 }
 
+
+// Customer
 message City {
 	int32 id = 1;
 	string uuid = 2;
@@ -104,7 +105,6 @@ message Address {
 	map<string, data.Value> additional_attributes = 22;
 	// google.protobuf.Struct additional_attributes = 22;
 }
-// Customer
 message Customer {
 	int32 id = 1;
 	string uuid = 2;
@@ -171,8 +171,6 @@ message Order {
 	bool is_binding_offer = 28;
 	bool is_order = 29;
 }
-
-// Sales Order Line
 message OrderLine {
 	string uuid = 1;
 	string order_uuid = 2;
@@ -216,10 +214,12 @@ message OrderLine {
 message ProcessWithoutPrintRequest {
 	int32 pos_id = 1;
 	string pos_uuid = 2;
-	int32 id = 3;
+	int32 id = 3; // order identifier
 	bool create_payments = 4;
 	bool is_open_refund = 5;
 	repeated CreatePaymentRequest payments = 6;
+	int32 invoice_id = 7;
+	string invoice_no = 8; // overwrite invoice
 }
 
 
@@ -234,6 +234,7 @@ message PrintTicketResponse {
 	// map<string, string> result_values = 7;
 	google.protobuf.Value result_values = 7;
 }
+
 
 
 // The greeting service definition.

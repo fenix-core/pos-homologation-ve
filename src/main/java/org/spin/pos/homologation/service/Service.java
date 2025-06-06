@@ -23,6 +23,7 @@ import org.compiere.model.MOrder;
 import org.compiere.model.MPOS;
 import org.compiere.util.Env;
 import org.compiere.util.Trx;
+import org.compiere.util.Util;
 import org.spin.base.Version;
 import org.spin.base.util.ConvertUtil;
 import org.spin.base.util.ValueUtil;
@@ -137,6 +138,19 @@ public class Service {
 			request.getId(),
 			request.getIsOpenRefund()
 		);
+
+		// overwrite document no on Invoice
+		if (Util.isEmpty(request.getInvoiceNo(), true)) {
+			int invoiceId = request.getInvoiceId();
+			if (order.getC_Invoice_ID() > 0) {
+				invoiceId = order.getC_Invoice_ID();
+			}
+			MInvoice invoice = new MInvoice(Env.getCtx(), invoiceId, null);
+			invoice.setDocumentNo(
+				request.getInvoiceNo()
+			);
+			invoice.saveEx();
+		}
 
 		Order.Builder builder = ConvertUtil.convertOrder(order);
 		return builder;
