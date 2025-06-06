@@ -92,9 +92,14 @@ public class Service {
 				int invoiceId = salesOrder.getC_Invoice_ID();
 				if (invoiceId > 0) {
 					MInvoice salesInvoice = new MInvoice(Env.getCtx(), invoiceId, transactionName);
-					salesInvoice.getLines();
 					invoiceReference.set(salesInvoice);
-					FiscalPrintLocalAPI fiscalPrintApi = FiscalPrintLocalAPI.newInstance();
+					FiscalPrintLocalAPI fiscalPrintApi = FiscalPrintLocalAPI.newInstance()
+						// .setAppRegistrationId(
+						// 	pos.get_ValueAsInt(
+						// 		I_AD_AppRegistration.COLUMNNAME_AD_AppRegistration_ID
+						// 	)
+						// )
+					;
 					Map<String, Object> printDocument = fiscalPrintApi.printFiscalDocument(
 						invoiceReference.get()
 					);

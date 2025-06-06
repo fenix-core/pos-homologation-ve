@@ -54,30 +54,31 @@ import org.spin.util.text.DataUtils;
 public class FiscalPrintLocalAPI
 {
 
-	// /**	Registration Id	*/
-	// private int registrationId = 0;
 	/** Static Logger					*/
 	private CLogger log = CLogger.getCLogger (FiscalPrintLocalAPI.class);
-	// /**	Port	*/
-	// private int port;
+
+	/**	Registration Id	*/
+	private int registrationId = 0;
+	/**	Port	*/
+	private int port = 0;
 	/**	Printer Name	*/
 	private String printerName = null;
-	// /**	Printer Response Name	*/
-	// private String printerResponseName = null;
+	/**	Printer Response Name	*/
+	private String printerResponseName = null;
 	/**	Port Name	*/
 	private String portName = null;
 	/**	Printer Model	*/
 	private String printerModel = null;
-	// /**	Host	*/
-	// private String host = null;
+	/**	Host	*/
+	private String host = null;
 	// /**	Timeout	*/
 	// private int defaultTimeout = 0;
 	/**	Printer Name	*/
 	private final String PRINTER_NAME = "printer_name";
 	/**	Printer Response Name	*/
 	private final String PRINTER_RESPONSE_NAME = "printer_response_name";
-	// /**	Port Name		*/
-	// private final String PORT_NAME = "port_name";
+	/**	Port Name		*/
+	private final String PORT_NAME = "port_name";
 	// /**	Read response Automatically	*/
 	// private boolean readResponseAfterSend = false;
 	/**	Date formatter	*/
@@ -85,7 +86,7 @@ public class FiscalPrintLocalAPI
     // /**	Application Type	*/
     // private String applicationType = null;
     /**	Client Info	*/
-    private MClientInfo clientInfo;
+	private final MClientInfo clientInfo;
 
 
 
@@ -94,68 +95,84 @@ public class FiscalPrintLocalAPI
 	}
 
 	public FiscalPrintLocalAPI() {
-		clientInfo = MClientInfo.get(Env.getCtx());
+		this(-1);
+	}
+	public FiscalPrintLocalAPI(int appRegistrationId) {
+		this.clientInfo = MClientInfo.get(Env.getCtx());
+
+ 		if(this.clientInfo == null) {
+			throw new AdempiereException("No client info found for current context");
+		}
+		setAppRegistrationId(appRegistrationId);
 	}
 
 
-	// // @Override
-	// public String testConnection() {
-	// 	//	Send X Report
-	// 	printFiscalReport(new FiscalReport(SupportedCommand.X_Report));
-	// 	return "Ok";
-	// }
+	public FiscalPrintLocalAPI setAppRegistrationId(int registrationId) {
+		this.registrationId = registrationId;
+		MADAppRegistration registration = MADAppRegistration.getById(Env.getCtx(), getAppRegistrationId(), null);
+		if (registration != null && registration.getAD_AppRegistration_ID() > 0) {
+			// applicationType = registration.getApplicationType();
+			this.port = registration.getPort();
+			this.host = registration.getHost();
+			this.printerModel = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_Model);
 
-	// // @Override
-	// public void setAppRegistrationId(int registrationId) {
-	// 	this.registrationId = registrationId;
-	// 	MADAppRegistration registration = MADAppRegistration.getById(Env.getCtx(), getAppRegistrationId(), null);
-	// 	applicationType = registration.getApplicationType();
-	// 	port = registration.getPort();
-	// 	host = registration.getHost();
-	// 	portName = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_LocalPort);
-	// 	printerModel = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_Model);
-	// 	if(!Util.isEmpty(portName)) {
-	// 		if(portName.equals(FiscalPrinterUtil.COLUMNNAME_CUSTOM_PORT)) {
-	// 			portName = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_CustomLocalPort);
-	// 		}
-	// 	}
-	// 	if(Util.isEmpty(portName)) {
-	// 		portName = registration.getParameterValue(PORT_NAME);
-	// 	}
-	// 	printerName = getPrinterName(registration);
-	// 	printerResponseName = getPrinterResponseName(registration);
-	// 	defaultTimeout = registration.getTimeout();
-	// 	readResponseAfterSend = registration.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ReadResponseAfterSend);
-	// 	clientInfo = MClientInfo.get(registration.getCtx(), registration.getAD_Client_ID());
-	// }
+			this.portName = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_LocalPort);
+			if(!Util.isEmpty(this.portName, true)) {
+				if(this.portName.equals(FiscalPrinterUtil.COLUMNNAME_CUSTOM_PORT)) {
+					this.portName = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_CustomLocalPort);
+				}
+			}
+			if(Util.isEmpty(this.portName)) {
+				this.portName = registration.getParameterValue(PORT_NAME);
+			}
 
-	// // @Override
-	// public int getAppRegistrationId() {
-	// 	return registrationId;
-	// }
+			this.printerName = getPrinterName(registration);
+			this.printerResponseName = getPrinterResponseName(registration);
+			// defaultTimeout = registration.getTimeout();
+			// readResponseAfterSend = registration.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ReadResponseAfterSend);
+		}
+		return this;
+	}
+
+	public int getAppRegistrationId() {
+		return registrationId;
+	}
+
 
 	private boolean showSalesRep() {
-		return clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowSalesRep);
+		return this.clientInfo != null &&
+			this.clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowSalesRep)
+		;
 	}
 
 	private boolean showWarehouse() {
-		return clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowWarehouse);
+		return this.clientInfo != null &&
+			this.clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowWarehouse)
+		;
 	}
 
 	private boolean showTerminal() {
-		return clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowTerminal);
+		return this.clientInfo != null &&
+			this.clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowTerminal)
+		;
 	}
 
 	private boolean showSOReference() {
-		return clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowSOReference);
+		return this.clientInfo != null &&
+			this.clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowSOReference)
+		;
 	}
 
 	private boolean showDocumentNote() {
-		return clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowDocumentNote);
+		return this.clientInfo != null &&
+			this.clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowDocumentNote)
+		;
 	}
 
 	private boolean showItemQuantity() {
-		return clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowItemQuantity);
+		return this.clientInfo != null &&
+			this.clientInfo.get_ValueAsBoolean(FiscalPrinterUtil.COLUMNNAME_ECA05_ShowItemQuantity)
+		;
 	}
 
 	/**
@@ -193,46 +210,41 @@ public class FiscalPrintLocalAPI
 		if(fiscalDocument.getDocumentDate() != null) {
 			document.put("document_date", DATE_FORMAT.format(fiscalDocument.getDocumentDate()));
 		}
-		//	Address 1
+
+		//	Address
 		if(!Util.isEmpty(fiscalDocument.getAddress1())) {
 			document.put("address_1", fiscalDocument.getAddress1());
 		}
-		//	Address 2
 		if(!Util.isEmpty(fiscalDocument.getAddress2())) {
 			document.put("address_2", fiscalDocument.getAddress2());
 		}
-		//	Address 3
 		if(!Util.isEmpty(fiscalDocument.getAddress3())) {
 			document.put("address_3", fiscalDocument.getAddress3());
 		}
-		//	Address 4
 		if(!Util.isEmpty(fiscalDocument.getAddress4())) {
 			document.put("address_4", fiscalDocument.getAddress4());
 		}
-		//	Business Partner Name
-		if(!Util.isEmpty(fiscalDocument.getBusinessPartnerName())) {
-			document.put("business_partner_name", fiscalDocument.getBusinessPartnerName());
-		}
-		//	Tax ID
-		if(!Util.isEmpty(fiscalDocument.getBusinessPartnerTaxId())) {
-			document.put("business_partner_tax_id", fiscalDocument.getBusinessPartnerTaxId());
-		}
-		//	DUNS
-		if(!Util.isEmpty(fiscalDocument.getBusinessPartnerDuns())) {
-			document.put("business_partner_duns", fiscalDocument.getBusinessPartnerDuns());
-		}
-		//	City Name
 		if(!Util.isEmpty(fiscalDocument.getCityName())) {
 			document.put("city_name", fiscalDocument.getCityName());
 		}
-		//	Country Name
 		if(!Util.isEmpty(fiscalDocument.getCountryName())) {
 			document.put("country_name", fiscalDocument.getCountryName());
 		}
-		//	Region Name
 		if(!Util.isEmpty(fiscalDocument.getRegionName())) {
 			document.put("region_name", fiscalDocument.getRegionName());
 		}
+
+		//	Business Partner
+		if(!Util.isEmpty(fiscalDocument.getBusinessPartnerName())) {
+			document.put("business_partner_name", fiscalDocument.getBusinessPartnerName());
+		}
+		if(!Util.isEmpty(fiscalDocument.getBusinessPartnerTaxId())) {
+			document.put("business_partner_tax_id", fiscalDocument.getBusinessPartnerTaxId());
+		}
+		if(!Util.isEmpty(fiscalDocument.getBusinessPartnerDuns())) {
+			document.put("business_partner_duns", fiscalDocument.getBusinessPartnerDuns());
+		}
+
 		//	Description
 		if(!Util.isEmpty(fiscalDocument.getDescription())) {
 			document.put("description", fiscalDocument.getDescription());
@@ -245,13 +257,15 @@ public class FiscalPrintLocalAPI
 		if(!Util.isEmpty(fiscalDocument.getDocumentUuid())) {
 			document.put("document_uuid", fiscalDocument.getDocumentUuid());
 		}
-		//	PO Reference No
-		if(!Util.isEmpty(fiscalDocument.getPoReferenceNo()) && showSOReference()) {
-			document.put("po_reference_no", fiscalDocument.getPoReferenceNo());
-		}
-		//	SO Reference No
-		if(!Util.isEmpty(fiscalDocument.getSoReferenceNo()) && showSOReference()) {
-			document.put("so_reference_no", fiscalDocument.getSoReferenceNo());
+		//	Reference No
+		if (showSOReference()) {
+			if(!Util.isEmpty(fiscalDocument.getPoReferenceNo(), true)) {
+				document.put("po_reference_no", fiscalDocument.getPoReferenceNo());
+			}
+			//	SO Reference No
+			if(!Util.isEmpty(fiscalDocument.getSoReferenceNo(), true)) {
+				document.put("so_reference_no", fiscalDocument.getSoReferenceNo());
+			}
 		}
 		//	Reversal Document No
 		if(!Util.isEmpty(fiscalDocument.getReversalDocumentNo())) {
@@ -265,21 +279,20 @@ public class FiscalPrintLocalAPI
 		if(fiscalDocument.getReversalDocumentDate() != null) {
 			document.put("reversal_document_date", DATE_FORMAT.format(fiscalDocument.getReversalDocumentDate()));
 		}
-		//	Sales representative value
-		if(!Util.isEmpty(fiscalDocument.getSalesRepresentativeValue()) && showSalesRep()) {
-			document.put("sales_representative_value", fiscalDocument.getSalesRepresentativeValue());
-		}
-		//	Sales representative name
-		if(!Util.isEmpty(fiscalDocument.getSalesRepresentativeName()) && showSalesRep()) {
-			document.put("sales_representative_name", fiscalDocument.getSalesRepresentativeName());
-		}
-		//	Sales Region
-		if(!Util.isEmpty(fiscalDocument.getSalesRegionValue()) && showSalesRep()) {
-			document.put("sales_region_value", fiscalDocument.getSalesRegionValue());
-		}
-		//	Sales Region Name
-		if(!Util.isEmpty(fiscalDocument.getSalesRegionName()) && showSalesRep()) {
-			document.put("sales_region_name", fiscalDocument.getSalesRegionName());
+		//	Sales representative
+		if (showSalesRep()) {
+			if(!Util.isEmpty(fiscalDocument.getSalesRepresentativeValue(), true)) {
+				document.put("sales_representative_value", fiscalDocument.getSalesRepresentativeValue());
+			}
+			if(!Util.isEmpty(fiscalDocument.getSalesRepresentativeName(), true)) {
+				document.put("sales_representative_name", fiscalDocument.getSalesRepresentativeName());
+			}
+			if(!Util.isEmpty(fiscalDocument.getSalesRegionValue(), true)) {
+				document.put("sales_region_value", fiscalDocument.getSalesRegionValue());
+			}
+			if(!Util.isEmpty(fiscalDocument.getSalesRegionName(), true)) {
+				document.put("sales_region_name", fiscalDocument.getSalesRegionName());
+			}
 		}
 		//	Payment Term
 		if(!Util.isEmpty(fiscalDocument.getPaymentTerm())) {
@@ -325,7 +338,7 @@ public class FiscalPrintLocalAPI
 		}
 		return document;
 	}
-	
+
 	/**
 	 * Get Invoice Lines
 	 * @param fiscalDocument
@@ -378,7 +391,7 @@ public class FiscalPrintLocalAPI
 		
 		return lines;
 	}
-	
+
 	/**
 	 * Get Invoice Taxes
 	 * @param fiscalDocument
@@ -415,7 +428,7 @@ public class FiscalPrintLocalAPI
 		});
 		return lines;
 	}
-	
+
 	/**
 	 * Get Invoice Payments
 	 * @param fiscalDocument
@@ -478,13 +491,13 @@ public class FiscalPrintLocalAPI
 		log.fine("Fiscal Document: " + fiscalDocument);
 		Map<String, Object> document = new HashMap<String, Object>();
 		try {
-			document.put("printer_name", printerName);
-			if(!Util.isEmpty(portName)) {
-				document.put("port_name", portName);
-			}
-			if(!Util.isEmpty(printerModel)) {
-				document.put("printer_model", printerModel);
-			}
+			document.put(PORT_NAME, this.portName);
+			document.put("port", this.port);
+			document.put("host_name", this.host);
+			document.put("printer_model", this.printerModel);
+			document.put(PRINTER_NAME, this.printerName);
+			document.put(PRINTER_RESPONSE_NAME, this.printerResponseName);
+
 			//	Put header
 			document.put("invoice", getInvoice(fiscalDocument));
 			//	Lines
@@ -493,6 +506,7 @@ public class FiscalPrintLocalAPI
 			document.put("taxes", getInvoiceTaxes(fiscalDocument));
 			//	Invoice Payments
 			document.put("payments", getInvoicePayments(fiscalDocument));
+			
 			//	
 			// final ProducerRecord record = new ProducerRecord<String, Map<String , Object>>(printerName, "fiscal_printer_document", document);
 			// producer.send(record);
