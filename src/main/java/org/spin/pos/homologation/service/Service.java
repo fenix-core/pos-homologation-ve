@@ -15,6 +15,7 @@
 package org.spin.pos.homologation.service;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.adempiere.exceptions.AdempiereException;
@@ -27,6 +28,7 @@ import org.compiere.util.Util;
 import org.spin.base.Version;
 import org.spin.base.util.ConvertUtil;
 import org.spin.base.util.ValueUtil;
+import org.spin.model.MADAppRegistration;
 import org.spin.pos.service.order.OrderManagement;
 import org.spin.pos.service.order.OrderUtil;
 import org.spin.proto.pos.homologation.Order;
@@ -39,6 +41,8 @@ import org.spin.service.grpc.util.value.TimeManager;
 import org.spin.service.grpc.util.value.ValueManager;
 import org.spin.service.pos.POS;
 import org.spin.support.FiscalPrintLocalAPI;
+import org.spin.util.fp.FiscalPrinterUtil;
+import org.spin.util.text.DataUtils;
 
 import com.google.protobuf.Value;
 
@@ -140,16 +144,34 @@ public class Service {
 		);
 
 		// overwrite document no on Invoice
-		if (Util.isEmpty(request.getInvoiceNo(), true)) {
-			int invoiceId = request.getInvoiceId();
-			if (order.getC_Invoice_ID() > 0) {
-				invoiceId = order.getC_Invoice_ID();
-			}
-			MInvoice invoice = new MInvoice(Env.getCtx(), invoiceId, null);
-			invoice.setDocumentNo(
-				request.getInvoiceNo()
-			);
+		if (order.getC_Invoice_ID() > 0) {
+			MInvoice invoice = new MInvoice(Env.getCtx(), order.getC_Invoice_ID(), null);
+			invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalDocumentNo, request.getFiscalDocumentNo());
+			invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_PrintFiscalDocument, "Y");
+			invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalClosingNo, request.getClosingNo());
+			// if (request.getPrintDate() != null) {
+			// 	invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalPrintDate, request.getPrintDate());
+			// }
+			invoice.setDocumentNo(request.getFiscalDocumentNo());
 			invoice.saveEx();
+
+			if(invoice.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID) > 0) {
+				String printerSerialNo = request.getFiscalPrinterSerialNo();
+				if(Util.isEmpty(printerSerialNo)) {
+					MADAppRegistration registeredApplication = MADAppRegistration.getById(
+						Env.getCtx(),
+						invoice.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID),
+						null
+					);
+					printerSerialNo = Optional.ofNullable(registeredApplication.getValue()).orElse("");
+				}
+				if(printerSerialNo.length() > 4) {
+					printerSerialNo = printerSerialNo.substring(printerSerialNo.length() - 4);
+				}
+				final String completeFiscalDocumentNo = DataUtils.leftPadding(printerSerialNo, 4, "0") + "-" + request.getFiscalDocumentNo();
+				invoice.setDocumentNo(completeFiscalDocumentNo);
+				invoice.saveEx();
+			}
 		}
 
 		Order.Builder builder = ConvertUtil.convertOrder(order);
