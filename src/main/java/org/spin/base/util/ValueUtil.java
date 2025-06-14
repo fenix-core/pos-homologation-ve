@@ -16,6 +16,7 @@
 package org.spin.base.util;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
@@ -123,6 +124,56 @@ public class ValueUtil {
 			.setValueType(ValueType.STRING)
 		;
 	}
+
+
+	public static com.google.protobuf.Value.Builder getProtoValueFromDouble(Double value) {
+		com.google.protobuf.Value.Builder builder = com.google.protobuf.Value.newBuilder();
+		if(value == null) {
+			return ValueManager.getValueFromNull();
+		}
+		String stringValue = String.format("%.2f", value)
+			.replace(",", ".")
+		;
+		builder.setStringValue(
+			StringManager.getValidString(stringValue)
+		);
+		// builder.setNumberValue(
+		// 	value
+		// );
+		return builder;
+	}
+	public static com.google.protobuf.Value.Builder getProtoValueFromFloat(Float value) {
+		com.google.protobuf.Value.Builder builder = com.google.protobuf.Value.newBuilder();
+		if(value == null) {
+			return ValueManager.getValueFromNull();
+		}
+		String stringValue = String.format("%.2f", value)
+			.replace(",", ".")
+		;
+		builder.setStringValue(
+			StringManager.getValidString(stringValue)
+		);
+		// builder.setNumberValue(
+		// 	value
+		// );
+		return builder;
+	}
+	public static com.google.protobuf.Value.Builder getProtoValueFromBigDecimal(BigDecimal value) {
+		com.google.protobuf.Value.Builder builder = com.google.protobuf.Value.newBuilder();
+		if(value == null) {
+			return ValueManager.getValueFromNull();
+		}
+		value.setScale(2, RoundingMode.HALF_UP);
+		String stringValue = value.setScale(2, RoundingMode.HALF_UP).toPlainString();
+		builder.setStringValue(
+			StringManager.getValidString(stringValue)
+		);
+		// builder.setNumberValue(
+		// 	value.doubleValue()
+		// );
+		return builder;
+	}
+
 
 	/**
 	 * Get value from a boolean value
@@ -464,8 +515,81 @@ public class ValueUtil {
 	}
 
 
+
 	/**
-	 * Get Value 
+	 * Recursive convert List to ListValue
+	 * @param values
+	 * @return
+	 */
+	public static com.google.protobuf.Value.Builder getProtoValueFromList(List<?> values) {
+		com.google.protobuf.Value.Builder protoValue = com.google.protobuf.Value.newBuilder();
+		com.google.protobuf.ListValue.Builder protoListBuilder = com.google.protobuf.ListValue.newBuilder();
+
+		if (values == null) {
+			// TODO: Validate if return null or empty
+			// protoValue.setListValue(
+			// 	protoListBuilder.build()
+			// );
+			return ValueManager.getValueFromNull();
+		}
+		else {
+			// Each and convert List to ListValue
+			((List<?>) values).forEach(valueItem -> {
+				com.google.protobuf.Value.Builder protoValueItem = getProtoValueFromObject(valueItem);
+				protoListBuilder.addValues(
+					protoValueItem
+				);
+			});
+		}
+		protoValue.setListValue(
+			protoListBuilder.build()
+		);
+		return protoValue;
+	}
+
+	/**
+	 * Recursive convert Map to Struct
+	 * @param values
+	 * @return
+	 */
+	public static com.google.protobuf.Value.Builder getProtoValueFromMap(Map<?, ?> values) {
+		com.google.protobuf.Value.Builder protoValue = com.google.protobuf.Value.newBuilder();
+		Struct.Builder structBuilder = Struct.newBuilder();
+
+		if (values == null) {
+			// TODO: Validate if return null or empty
+			// protoValue.setStructValue(
+			// 	structBuilder
+			// );
+			return ValueManager.getValueFromNull();
+		}
+		else {
+			((Map<?, ?>) values).forEach((keyItem, valueItem) -> {
+				// key always is string
+				String structKey = "";
+				if (keyItem instanceof String) {
+					structKey = (String) keyItem;
+				} else {
+					// Handle error if key not is String
+					structKey = StringManager.getStringFromObject(keyItem);
+				}
+
+				com.google.protobuf.Value.Builder protoValueItem = getProtoValueFromObject(valueItem);
+				structBuilder.putFields(
+					structKey,
+					protoValueItem.build()
+				);
+			});
+		}
+		protoValue.setStructValue(
+			structBuilder
+		);
+		return protoValue;
+	}
+
+
+	/**
+	 * Get Value
 	 * @param value
 	 * @return
 	 */
@@ -476,48 +600,42 @@ public class ValueUtil {
 		}
 		//	Validate value
 		if(value instanceof BigDecimal) {
-			return ValueManager.getValueFromBigDecimal((BigDecimal) value);
+			return getProtoValueFromBigDecimal(
+				(BigDecimal) value
+			);
+		} else if (value instanceof Double) {
+			return getProtoValueFromDouble(
+				(Double) value
+			);
+		} else if (value instanceof Float) {
+			return getProtoValueFromFloat(
+				(Float) value
+			);
 		} else if (value instanceof Integer) {
-			return ValueManager.getValueFromInteger((Integer)value);
+			return ValueManager.getValueFromInteger(
+				(Integer) value
+			);
 		} else if (value instanceof String) {
-			return ValueManager.getValueFromString((String) value);
+			return ValueManager.getValueFromString(
+				(String) value
+			);
 		} else if (value instanceof Boolean) {
-			return ValueManager.getValueFromBoolean((Boolean) value);
+			return ValueManager.getValueFromBoolean(
+				(Boolean) value
+			);
 		} else if(value instanceof Timestamp) {
-			return ValueManager.getValueFromTimestamp((Timestamp) value);
+			return ValueManager.getValueFromTimestamp(
+				(Timestamp) value
+			);
 		} else if (value instanceof Map) {
-			//  Recursivamente convertir Map a Struct (si es necesario)
-			Struct.Builder structBuilder = Struct.newBuilder();
-			((Map<?, ?>) value).forEach((k, v) -> {
-				String structKey = "";
-				if (k instanceof String) {
-					structKey = (String) k;
-				} else {
-					//  Manejar error o lanzar excepción si la clave no es String
-					structKey = StringManager.getStringFromObject(k);
-				}
-
-				com.google.protobuf.Value.Builder structValue = getProtoValueFromObject(v);
-				structBuilder.putFields(
-					structKey,
-					structValue.build()
-				);
-			});
-			return builder.setStructValue(
-				structBuilder.build()
+			return getProtoValueFromMap(
+				(Map<?, ?>) value
 			);
 		} else if (value instanceof List) {
-			//  Convertir List a ListValue
-			com.google.protobuf.ListValue.Builder listBuilder = com.google.protobuf.ListValue.newBuilder();
-			((List<?>) value).forEach(v -> {
-				listBuilder.addValues(
-					getProtoValueFromObject(v)
-				);
-			});
-			return builder.setListValue(
-				listBuilder.build()
+			return getProtoValueFromList(
+				(List<?>) value
 			);
-		} 
+		}
 		//	
 		return builder;
 	}

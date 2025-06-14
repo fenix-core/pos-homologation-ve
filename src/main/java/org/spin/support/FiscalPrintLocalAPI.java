@@ -257,6 +257,10 @@ public class FiscalPrintLocalAPI
 		if(!Util.isEmpty(fiscalDocument.getDocumentUuid())) {
 			document.put("document_uuid", fiscalDocument.getDocumentUuid());
 		}
+
+		// TODO: Validate this on response
+		// document.put("force_printing", true);
+
 		//	Reference No
 		if (showSOReference()) {
 			if(!Util.isEmpty(fiscalDocument.getPoReferenceNo(), true)) {

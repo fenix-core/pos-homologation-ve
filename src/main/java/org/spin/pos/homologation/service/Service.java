@@ -99,11 +99,11 @@ public class Service {
 					MInvoice salesInvoice = new MInvoice(Env.getCtx(), invoiceId, transactionName);
 					invoiceReference.set(salesInvoice);
 					FiscalPrintLocalAPI fiscalPrintApi = FiscalPrintLocalAPI.newInstance()
-						// .setAppRegistrationId(
-						// 	pos.get_ValueAsInt(
-						// 		I_AD_AppRegistration.COLUMNNAME_AD_AppRegistration_ID
-						// 	)
-						// )
+						.setAppRegistrationId(
+							pos.get_ValueAsInt(
+								FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID
+							)
+						)
 					;
 					Map<String, Object> printDocument = fiscalPrintApi.printFiscalDocument(
 						invoiceReference.get()
@@ -145,7 +145,7 @@ public class Service {
 
 		// overwrite document no on Invoice
 		if (order.getC_Invoice_ID() > 0) {
-			MInvoice invoice = new MInvoice(Env.getCtx(), order.getC_Invoice_ID(), null);
+			MInvoice invoice = new MInvoice(Env.getCtx(), order.getC_Invoice_ID(), order.get_TrxName());
 			invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalDocumentNo, request.getFiscalDocumentNo());
 			invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_PrintFiscalDocument, "Y");
 			invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalClosingNo, request.getClosingNo());
@@ -155,15 +155,23 @@ public class Service {
 			invoice.setDocumentNo(request.getFiscalDocumentNo());
 			invoice.saveEx();
 
-			if(invoice.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID) > 0) {
+			int appPrinterId = invoice.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID);
+			if (appPrinterId <= 0) {
+				appPrinterId = pos.get_ValueAsInt(
+					FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID
+				);
+			}
+			if(appPrinterId > 0) {
 				String printerSerialNo = request.getFiscalPrinterSerialNo();
 				if(Util.isEmpty(printerSerialNo)) {
 					MADAppRegistration registeredApplication = MADAppRegistration.getById(
 						Env.getCtx(),
-						invoice.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID),
+						appPrinterId,
 						null
 					);
-					printerSerialNo = Optional.ofNullable(registeredApplication.getValue()).orElse("");
+					if (registeredApplication != null && registeredApplication.getAD_AppRegistration_ID() > 0) {
+						printerSerialNo = Optional.ofNullable(registeredApplication.getValue()).orElse("");
+					}
 				}
 				if(printerSerialNo.length() > 4) {
 					printerSerialNo = printerSerialNo.substring(printerSerialNo.length() - 4);
