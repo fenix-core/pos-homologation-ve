@@ -259,7 +259,7 @@ public class FiscalPrintLocalAPI
 		}
 
 		// TODO: Validate this on response
-		// document.put("force_printing", true);
+		document.put("force_printing", true);
 
 		//	Reference No
 		if (showSOReference()) {

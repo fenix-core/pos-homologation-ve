@@ -16,6 +16,7 @@
 package org.spin.pos.service.order;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -49,9 +50,13 @@ import org.compiere.util.Trx;
 import org.compiere.util.Util;
 import org.spin.base.util.DocumentUtil;
 import org.spin.base.util.RecordUtil;
+import org.spin.model.MADAppRegistration;
 import org.spin.pos.service.cash.CashManagement;
 import org.spin.pos.service.cash.CashUtil;
 import org.spin.pos.util.ColumnsAdded;
+import org.spin.service.grpc.util.value.TimeManager;
+import org.spin.util.fp.FiscalPrinterUtil;
+import org.spin.util.text.DataUtils;
 
 /**
  * A util class for change values for documents
@@ -108,7 +113,7 @@ public class OrderManagement {
 	}
 
 
-	public static MOrder processOrder(MPOS pos, int orderId, boolean isRefundOpen) {
+	public static MOrder processOrder(MPOS pos, int orderId, boolean isRefundOpen, String closingNo, String fiscalDocumentNo, String fiscalPrinterSerialNo, String printDate) {
 		AtomicReference<MOrder> orderReference = new AtomicReference<MOrder>();
 		Trx.run(transactionName -> {
 			if(orderId <= 0) {
@@ -153,6 +158,47 @@ public class OrderManagement {
 			}
 			//	Process all references
 			processPaymentReferences(salesOrder, pos, paymentReferences, transactionName);
+
+			// overwrite document no on Invoice
+			if (salesOrder.getC_Invoice_ID() > 0) {
+				MInvoice invoice = new MInvoice(Env.getCtx(), salesOrder.getC_Invoice_ID(), transactionName);
+				invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalDocumentNo, fiscalDocumentNo);
+				invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_PrintFiscalDocument, "Y");
+				invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalClosingNo, closingNo);
+				if (!Util.isEmpty(printDate, true)) {
+					Timestamp printDateTimestamp = TimeManager.getTimestampFromString(printDate);
+					invoice.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalPrintDate, printDateTimestamp);
+				}
+				invoice.setDocumentNo(fiscalDocumentNo);
+				invoice.saveEx();
+
+				int appPrinterId = invoice.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID);
+				if (appPrinterId <= 0) {
+					appPrinterId = pos.get_ValueAsInt(
+						FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID
+					);
+				}
+				if(appPrinterId > 0) {
+					String printerSerialNo = fiscalPrinterSerialNo;
+					if(Util.isEmpty(printerSerialNo)) {
+						MADAppRegistration registeredApplication = MADAppRegistration.getById(
+							Env.getCtx(),
+							appPrinterId,
+							null
+						);
+						if (registeredApplication != null && registeredApplication.getAD_AppRegistration_ID() > 0) {
+							printerSerialNo = Optional.ofNullable(registeredApplication.getValue()).orElse("");
+						}
+					}
+					if(printerSerialNo.length() > 4) {
+						printerSerialNo = printerSerialNo.substring(printerSerialNo.length() - 4);
+					}
+					final String completeFiscalDocumentNo = DataUtils.leftPadding(printerSerialNo, 4, "0") + "-" + fiscalDocumentNo;
+					invoice.setDocumentNo(completeFiscalDocumentNo);
+					invoice.saveEx();
+				}
+			}
+
 			//	Create
 			orderReference.set(salesOrder);
 		});
