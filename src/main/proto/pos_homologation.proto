@@ -221,6 +221,8 @@ message ProcessWithoutPrintRequest {
 	string fiscal_document_no = 7; // overwrite invoice
 	string fiscal_printer_serial_no = 8;
 	string closing_no = 9; // Z Report
+	// google.protobuf.Timestamp print_date = 10;
+	string print_date = 10;
 }
 
 
