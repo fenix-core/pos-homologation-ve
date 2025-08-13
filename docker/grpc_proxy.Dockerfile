@@ -8,8 +8,7 @@ LABEL maintainer="ySenih@erpya.com; EdwinBetanc0urt@outlook.com;" \
 ENV \
 	SERVER_PORT="5555" \
 	BACKEND_HOST="localhost" \
-	BACKEND_PORT="50059" \
-	SERVICES_ENABLED="pos.homologatione.PosHomologationService;"
+	BACKEND_PORT="50059"
 
 #Expose Ports
 # EXPOSE 9901 # admin port

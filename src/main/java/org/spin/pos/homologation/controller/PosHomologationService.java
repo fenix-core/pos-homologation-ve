@@ -20,8 +20,10 @@ import org.spin.proto.pos.homologation.GetSystemInfoRequest;
 import org.spin.proto.pos.homologation.Order;
 import org.spin.proto.pos.homologation.PosHomologationServiceGrpc.PosHomologationServiceImplBase;
 import org.spin.proto.pos.homologation.PrintTicketResponse;
+import org.spin.proto.pos.homologation.ProcessReverseSalesWithoutPrintRequest;
 import org.spin.proto.pos.homologation.ProcessWithoutPrintRequest;
 import org.spin.proto.pos.homologation.SimulateProcessOrderRequest;
+import org.spin.proto.pos.homologation.SimulateReverseSalesRequest;
 import org.spin.proto.pos.homologation.SystemInfo;
 
 import io.grpc.Status;
@@ -77,6 +79,48 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 	public void processWithoutPrint(ProcessWithoutPrintRequest request, StreamObserver<Order> responseObserver) {
 		try {
 			Order.Builder builder = Service.processWithoutPrint(request);
+			responseObserver.onNext(
+				builder.build()
+			);
+			responseObserver.onCompleted();
+		} catch (Exception e) {
+			log.warning(e.getLocalizedMessage());
+			e.printStackTrace();
+			responseObserver.onError(
+				Status.INTERNAL
+					.withDescription(e.getLocalizedMessage())
+					.withCause(e)
+					.asRuntimeException()
+			);
+		}
+	}
+
+
+	@Override
+	public void simulateReverseSales(SimulateReverseSalesRequest request, StreamObserver<PrintTicketResponse> responseObserver) {
+		try {
+			PrintTicketResponse.Builder builder = PrintTicketResponse.newBuilder();
+			responseObserver.onNext(
+				builder.build()
+			);
+			responseObserver.onCompleted();
+		} catch (Exception e) {
+			log.warning(e.getLocalizedMessage());
+			e.printStackTrace();
+			responseObserver.onError(
+				Status.INTERNAL
+					.withDescription(e.getLocalizedMessage())
+					.withCause(e)
+					.asRuntimeException()
+			);
+		}
+	}
+
+
+	@Override
+	public void processReverseSalesWithoutPrint(ProcessReverseSalesWithoutPrintRequest request, StreamObserver<Order> responseObserver) {
+		try {
+			Order.Builder builder = Order.newBuilder();
 			responseObserver.onNext(
 				builder.build()
 			);
