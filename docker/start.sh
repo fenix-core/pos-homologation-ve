@@ -25,7 +25,7 @@ sed -i "s|fill_connection_test_query|$CONNECTION_TEST_QUERY|g" env.yaml
 
 # Set java options
 export DEFAULT_JAVA_OPTIONS='"-Xms64M" "-Xmx1512M"'
-sed -i "s|$DEFAULT_JAVA_OPTIONS|$JAVA_OPTIONS|g" bin/pos-homologation-service
+sed -i "s|$DEFAULT_JAVA_OPTIONS|$JAVA_OPTIONS|g" bin/start-backend.sh
 
 # Run app
-bin/pos-homologation-service env.yaml
+bin/start-backend.sh env.yaml
