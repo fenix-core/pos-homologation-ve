@@ -14,6 +14,7 @@ static_resources:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           stat_prefix: grpc_json
           codec_type: AUTO
+          stream_idle_timeout: 900s
           route_config:
             name: local_route
             virtual_hosts:
@@ -29,7 +30,7 @@ static_resources:
                 }
                 route: {
                   cluster: pos_homologation_cluster,
-                  timeout: 360s
+                  timeout: 900s # 0s to disable timeout
                 }
           http_filters:
           - name: envoy.filters.http.grpc_json_transcoder

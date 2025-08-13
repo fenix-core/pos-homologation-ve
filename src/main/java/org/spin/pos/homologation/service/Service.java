@@ -115,7 +115,7 @@ public class Service {
 			if (e.getMessage().equals(ITS_OK_SIMULATION)) {
 				// nothing here
 			} else {
-				e.printStackTrace();
+				// e.printStackTrace();
 				throw new AdempiereException(e);
 			}
 		}
