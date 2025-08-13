@@ -8,12 +8,6 @@ plugins {
 	id "io.github.uoxx3.project-environment" version "1.0.1"
 }
 
-group 'com.nikhilm'
-
-java {
-	sourceCompatibility = JavaVersion.VERSION_11
-}
-
 def grpcVersion = "1.65.1"
 def protobufVersion = "3.25.4"
 def baseVersion = '3.9.4'
@@ -23,12 +17,24 @@ def privateDependencyBaseVersion = "adempiere-3.9.4"
 def javaMainClass = "org.spin.pos.homologation.server.PosHomologationServer"
 def descriptorFile = "pos-homologation-service.dsc"
 
-startScripts.enabled = false
 
+java {
+	sourceCompatibility = JavaVersion.VERSION_11
+	targetCompatibility = JavaVersion.VERSION_17
+}
 
 application {
 	mainClass.set(javaMainClass)
+
+	// distribution output
+	distributions {
+		main {
+			contents {
+			}
+		}
+	}
 }
+
 jar {
 	manifest {
 		attributes(
@@ -124,12 +130,41 @@ sourceSets {
 	}
 }
 
+startScripts {
+	applicationName = 'start-backend'
+
+	// default JVM setting
+	defaultJvmOpts = [
+		"-DPropertyFile=Adempiere.properties", 
+		"-Dorg.adempiere.server.embedded=true"
+	]
+	outputDir = new File(project.buildDir, 'tmp')
+	classpath = jar.outputs.files + project.configurations.runtimeClasspath
+
+	// Configure script names with extensions
+	doLast {
+		def unixScript = file(getUnixScript())
+		def windowsScript = file(getWindowsScript())
+
+		// Rename files after generating them
+		unixScript.renameTo("${unixScript.parent}/${applicationName}.sh")
+		windowsScript.renameTo("${windowsScript.parent}/${applicationName}.bat")
+
+		// Configure permissions for generated scripts
+		unixScript.setExecutable(true, false)
+		// windowsScript.setExecutable(true, false)
+	}
+}
+
 // Copy proto descriptor another folder
 allprojects {
 	task copyDescriptor(type: Copy) {
 		from "${projectDir}/build/descriptors/${descriptorFile}"
 		into "${projectDir}/docker-compose/envoy/definitions"
 		// rename { "${descriptorFile}" }
+
+		// task dependency
+		dependsOn "generateTestProto"
 	}
 
 	tasks.matching {
@@ -139,16 +174,12 @@ allprojects {
 	}
 }
 
-task AdempiereTemplateServer(type: CreateStartScripts) {
-	mainClass = javaMainClass
-    applicationName = 'pos-homologation-service'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = jar.outputs.files + project.configurations.runtimeClasspath
+// compressed files task
+distTar {
+	dependsOn compileTestJava, copyDescriptor, startScripts
 }
-
-applicationDistribution.into('bin') {
-	from(AdempiereTemplateServer)
-    fileMode = 0755
+distZip {
+	dependsOn compileTestJava, copyDescriptor, startScripts
 }
 
 //	Create release for project
@@ -158,13 +189,17 @@ task createRelease(type: Copy) {
 	into file("$buildDir/release/")
 	//destinationDir(file('build/release/'))
 	doLast {
-			file('build/release/')
-				.listFiles({file -> file.isFile()} as FileFilter)
-				.sort()
-				.each { File file ->
-					ant.checksum file: file
-				}
-		}
+		file('build/release/')
+			.listFiles({file -> file.isFile()} as FileFilter)
+			.sort()
+			.each { File file ->
+				ant.checksum file: file
+			}
+	}
+}
+
+task cleanBuild(type: GradleBuild) {
+	tasks = ['clean', 'build']
 }
 
 dependencies {
