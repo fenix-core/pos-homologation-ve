@@ -6,6 +6,10 @@
 
 name: Continuous Integration with Gradle
 
+permissions:
+  contents: write # to upload release assets
+  packages: write # to publish package
+
 on:
   push:
     branches:
@@ -89,3 +93,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Check permissions 
+        run: |
+          echo "Token permissions:"
+          echo "${{ toJSON(github.token_permissions) }}"
