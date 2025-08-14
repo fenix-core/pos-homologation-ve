@@ -8,7 +8,7 @@ name: Continuous Integration with Gradle
 
 permissions:
   contents: write # to upload release assets
-  packages: write # to publish package
+  packages: write # to publish packages
 
 on:
   push:
