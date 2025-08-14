@@ -30,10 +30,12 @@ import org.compiere.model.MConversionRate;
 import org.compiere.model.MDocType;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MOrder;
+import org.compiere.model.MOrderLine;
 import org.compiere.model.MPOS;
 import org.compiere.model.MPayment;
 import org.compiere.model.MPriceList;
 import org.compiere.model.MTable;
+import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.util.DB;
@@ -108,6 +110,29 @@ public class OrderUtil {
 				return getConvetedAmount(order, paymentReference, amount);
 			})
 			.collect(Collectors.reducing(BigDecimal::add));
+	}
+
+	/**
+	 * Set UOM and Quantity based on unit of measure
+	 * @param orderLine
+	 * @param unitOfMeasureId
+	 * @param quantity
+	 */
+	public static void updateUomAndQuantity(MOrderLine orderLine, int unitOfMeasureId, BigDecimal quantity) {
+		if(quantity != null) {
+			orderLine.setQty(quantity);
+		}
+		if(unitOfMeasureId > 0) {
+			orderLine.setC_UOM_ID(unitOfMeasureId);
+		}
+		BigDecimal quantityEntered = orderLine.getQtyEntered();
+		BigDecimal priceEntered = orderLine.getPriceEntered();
+		BigDecimal convertedQuantity = MUOMConversion.convertProductFrom(orderLine.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), quantityEntered);
+		BigDecimal convertedPrice = MUOMConversion.convertProductTo(orderLine.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), priceEntered);
+		orderLine.setQtyOrdered(convertedQuantity);
+		orderLine.setPriceActual(convertedPrice);
+		orderLine.setLineNetAmt();
+		orderLine.saveEx();
 	}
 
 

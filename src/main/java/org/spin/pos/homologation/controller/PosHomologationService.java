@@ -120,7 +120,7 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 	@Override
 	public void processReverseSalesWithoutPrint(ProcessReverseSalesWithoutPrintRequest request, StreamObserver<Order> responseObserver) {
 		try {
-			Order.Builder builder = Order.newBuilder();
+			Order.Builder builder = Service.processReverseSalesWithoutPrint(request);
 			responseObserver.onNext(
 				builder.build()
 			);
