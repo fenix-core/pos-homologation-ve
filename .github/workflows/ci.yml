@@ -71,30 +71,3 @@ jobs:
           name: pos-homologation-service.dsc
           path: build/descriptors/pos-homologation-service.dsc
           retention-days: 1
-
-      - name: Debug permissions
-        run: |
-          echo "Permisos actuales:"
-          echo "${{ toJSON(github.token_permissions) }}"
-          echo "¿Tiene contents:write? ${{ contains(fromJSON(toJSON(github.token_permissions)).contents, 'write') }}"
-
-      - name: Verify token scope
-        run: |
-          RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            https://api.github.com/repos/$GITHUB_REPOSITORY)
-          PERMISSIONS=$(echo "$RESPONSE" | jq -r '.permissions')
-          echo "Permisos actuales: $PERMISSIONS"
-          if [[ $(echo "$PERMISSIONS" | jq -r '.contents') == "write" ]]; then
-            echo "✅ contents:write confirmado";
-          else
-            echo "❌ Falta contents:write";
-            exit 1;
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-
-      - name: Check permissions 
-        run: |
-          echo "Token permissions:"
-          echo "${{ toJSON(github.token_permissions) }}"

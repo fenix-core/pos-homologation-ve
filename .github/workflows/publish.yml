@@ -5,6 +5,10 @@
 
 name: Publish Project
 
+permissions:
+  contents: write # to upload release assets
+  packages: write # to publish package
+
 on:
   release:
     types:
