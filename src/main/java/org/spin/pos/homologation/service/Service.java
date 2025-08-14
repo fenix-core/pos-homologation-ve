@@ -28,10 +28,13 @@ import org.spin.base.util.ConvertUtil;
 import org.spin.base.util.ValueUtil;
 import org.spin.pos.service.order.OrderManagement;
 import org.spin.pos.service.order.OrderUtil;
+import org.spin.pos.service.order.ReverseSalesTransaction;
 import org.spin.proto.pos.homologation.Order;
 import org.spin.proto.pos.homologation.PrintTicketResponse;
+import org.spin.proto.pos.homologation.ProcessReverseSalesWithoutPrintRequest;
 import org.spin.proto.pos.homologation.ProcessWithoutPrintRequest;
 import org.spin.proto.pos.homologation.SimulateProcessOrderRequest;
+import org.spin.proto.pos.homologation.SimulateReverseSalesRequest;
 import org.spin.proto.pos.homologation.SystemInfo;
 import org.spin.service.grpc.util.value.StringManager;
 import org.spin.service.grpc.util.value.TimeManager;
@@ -89,7 +92,7 @@ public class Service {
 					transactionName
 				);
 				orderReference.set(salesOrder);
-				salesOrder.getDocStatus();
+
 				int invoiceId = salesOrder.getC_Invoice_ID();
 				if (invoiceId > 0) {
 					MInvoice salesInvoice = new MInvoice(Env.getCtx(), invoiceId, transactionName);
@@ -145,6 +148,82 @@ public class Service {
 
 		Order.Builder builder = ConvertUtil.convertOrder(order);
 		return builder;
+	}
+
+
+	public static PrintTicketResponse.Builder simulateReverseSales(SimulateReverseSalesRequest request) {
+		PrintTicketResponse.Builder builder = PrintTicketResponse.newBuilder();
+		MPOS pos = POS.validateAndGetPOS(request.getPosId(), true);
+		OrderUtil.validateAndGetOrder(request.getId());
+
+		AtomicReference<MInvoice> invoiceReference = new AtomicReference<MInvoice>();
+		AtomicReference<MOrder> orderReference = new AtomicReference<MOrder>();
+		try {
+			Trx.run(transactionName -> {
+				int orderId = request.getId();
+				MOrder salesOrder = ReverseSalesTransaction.returnCompleteOrder(
+					pos,
+					orderId,
+					request.getDescription(),
+					transactionName
+				);
+				orderReference.set(salesOrder);
+
+				int invoiceId = salesOrder.getC_Invoice_ID();
+				if (invoiceId > 0) {
+					MInvoice salesInvoice = new MInvoice(Env.getCtx(), invoiceId, transactionName);
+					invoiceReference.set(salesInvoice);
+					FiscalPrintLocalAPI fiscalPrintApi = FiscalPrintLocalAPI.newInstance()
+						.setAppRegistrationId(
+							pos.get_ValueAsInt(
+								FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID
+							)
+						)
+					;
+					Map<String, Object> printDocument = fiscalPrintApi.printFiscalDocument(
+						invoiceReference.get()
+					);
+					Value.Builder printDocumentBuilder = ValueUtil.getProtoValueFromObject(printDocument);
+					builder.setResultValues(printDocumentBuilder);
+				}
+
+				// Break this simulation and rollback all transactions
+				throw new AdempiereException(ITS_OK_SIMULATION);
+			});
+		} catch (Exception e) {
+			if (e.getMessage().equals(ITS_OK_SIMULATION)) {
+				// nothing here
+			} else {
+				// e.printStackTrace();
+				throw new AdempiereException(e);
+			}
+		}
+
+		return builder;
+	}
+
+
+	public static Order.Builder processReverseSalesWithoutPrint(ProcessReverseSalesWithoutPrintRequest request) {
+		if(request.getId() <= 0) {
+			throw new AdempiereException("@C_Order_ID@ @NotFound@");
+		}
+		int orderId = request.getId();
+		MPOS pos = POS.validateAndGetPOS(request.getPosId(), request.getPosUuid(), true);
+
+		AtomicReference<MOrder> returnOrderReference = new AtomicReference<MOrder>();
+		Trx.run(transactionName -> {
+			MOrder returnOrder = ReverseSalesTransaction.returnCompleteOrder(
+				pos,
+				orderId,
+				request.getDescription(),
+				transactionName
+			);
+			returnOrderReference.set(returnOrder);
+		});
+		//	Default
+		return ConvertUtil.convertOrder(
+			returnOrderReference.get()
+		);
 	}
 
 }
