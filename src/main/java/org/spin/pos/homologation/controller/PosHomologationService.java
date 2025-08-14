@@ -99,7 +99,7 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 	@Override
 	public void simulateReverseSales(SimulateReverseSalesRequest request, StreamObserver<PrintTicketResponse> responseObserver) {
 		try {
-			PrintTicketResponse.Builder builder = PrintTicketResponse.newBuilder();
+			PrintTicketResponse.Builder builder = Service.simulateReverseSales(request);
 			responseObserver.onNext(
 				builder.build()
 			);
