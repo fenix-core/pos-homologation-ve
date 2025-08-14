@@ -5,6 +5,10 @@
 
 name: Publish Project
 
+permissions:
+  contents: write # to upload release assets
+  packages: write # to publish package
+
 on:
   release:
     types:
@@ -14,7 +18,7 @@ jobs:
 
   # Build dist application
   build-app:
-    name: Build dist Template
+    name: Build dist with Gradle
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -28,21 +32,18 @@ jobs:
           java-version: 17
           architecture: x64
 
-      - name: Setup Gradle
+      - name: Setup Gradle 9
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: current # 9.0.0
 
-      - name: Set Main Version
-        run: echo "MAIN_VERSION=${{ github.event.release.name }}" >> src/main/java/org/spin/base/version.properties
+      - name: Set Version Properties
+        run: |
+          echo "MAIN_VERSION=${{ github.event.release.name }}" >> src/main/java/org/spin/base/version.properties
+          echo "DATE_VERSION=$(date +'%Y-%m-%d')" >> src/main/java/org/spin/base/version.properties
+          echo "IMPLEMENTATION_VERSION=${{ github.event.release.tag_name }}" >> src/main/java/org/spin/base/version.properties
 
-      - name: Set Release Date
-        run: echo "DATE_VERSION=$(date +'%Y-%m-%d')" >> src/main/java/org/spin/base/version.properties
-
-      - name: Set Implementation Version
-        run: echo "IMPLEMENTATION_VERSION=${{ github.event.release.tag_name }}" >> src/main/java/org/spin/base/version.properties
-
-      - name: Run Create Release
+      - name: Create Release with Gradle
         run: gradle createRelease
         env:
           ORG_GRADLE_PROJECT_deployUsername: ${{ secrets.DEPLOY_USER }}
@@ -52,81 +53,47 @@ jobs:
           GITHUB_DEPLOY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_DEPLOY_REPOSITORY: ${{ secrets.DEPLOY_REPOSITORY }}
 
-      - name: Upload descriptor file artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: pos-homologation-service.dsc
-          path: build/descriptors/pos-homologation-service.dsc
+      - name: Prepare flat artifacts
+        run: |
+          mkdir -p flat_artifacts/
+          cp build/descriptors/pos-homologation-service.dsc flat_artifacts/ || echo "Warning: .dsc file not found"
+          cp build/release/pos-homologation-ve.* flat_artifacts/ || echo "Warning: release files not found"
+          cp resources/env.yaml flat_artifacts/ || echo "Warning: env.yaml not found"
+          ls -la flat_artifacts/
 
-      - name: Upload dist app zip artifact
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: pos-homologation-ve.zip
-          path: build/release/pos-homologation-ve.zip
+          name: release-artifacts
+          path: flat_artifacts/*
+          retention-days: 1
 
-      - name: Upload dist app zip.MD5 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: pos-homologation-ve.zip.MD5
-          path: build/release/pos-homologation-ve.zip.MD5
 
-      - name: Upload dist app tar artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: pos-homologation-ve.tar
-          path: build/release/pos-homologation-ve.tar
-
-      - name: Upload dist app tar.MD5 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: pos-homologation-ve.tar.MD5
-          path: build/release/pos-homologation-ve.tar.MD5
 
   publish-binaries:
-    name: Upload Binaries on Release
+    name: Publish Release Assets
     needs: build-app
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Download all artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: artifacts/
 
-      - name: Upload Descriptor
-        uses: skx/github-action-publish-binaries@master
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          files: |
+            artifacts/pos-homologation-service.dsc
+            artifacts/pos-homologation-ve.zip
+            artifacts/pos-homologation-ve.zip.MD5
+            artifacts/pos-homologation-ve.tar
+            artifacts/pos-homologation-ve.tar.MD5
+            artifacts/env.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: pos-homologation-service.dsc/pos-homologation-service.dsc
-
-      - name: Upload zip
-        uses: skx/github-action-publish-binaries@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: pos-homologation-ve.zip/pos-homologation-ve.zip
-
-      - name: Upload zip.MD5
-        uses: skx/github-action-publish-binaries@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: pos-homologation-ve.zip.MD5/pos-homologation-ve.zip.MD5
-
-      - name: Upload tar
-        uses: skx/github-action-publish-binaries@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: pos-homologation-ve.tar/pos-homologation-ve.tar
-
-      - name: Upload tar.MD5
-        uses: skx/github-action-publish-binaries@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: pos-homologation-ve.tar.MD5/pos-homologation-ve.tar.MD5
 
 
 
@@ -152,10 +119,11 @@ jobs:
             echo "is_have_secrets=false" >> $GITHUB_OUTPUT
           fi
 
+
   # TODO: Download .tar and add docker image without uncompress
   # Publish docker alpine image in Docker Hub Registry to application
   push-alpine-imame-dhr:
-    name: Push docker alpine image to Docker Hub
+    name: Push alpine docker image to Docker Hub
     needs:
       - check-docker-secrets
     # Skip step based on secret
@@ -164,19 +132,24 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
-      - name: Download build dist app
+
+      - name: Download dist artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pos-homologation-ve.zip
+          name: release-artifacts
+          path: artifacts/
+
       - name: Unzip Asset
         run: |
-          unzip pos-homologation-ve.zip -d docker/
+          unzip artifacts/pos-homologation-ve.zip -d docker/
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           # CONFIGURE DOCKER SECRETS INTO REPOSITORY
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
+
       - name: Push alpine image in Docker Hub
         uses: docker/build-push-action@v5
         with:
@@ -186,6 +159,7 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_HUB_REPO_NAME }}:alpine-${{ github.event.release.tag_name }}
             ${{ secrets.DOCKER_HUB_REPO_NAME }}:alpine
+
 
   # TODO: Download .tar and add docker image without uncompress
   # Publish docker multiplatform image in Docker Hub Registry to application
@@ -199,17 +173,23 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
-      - name: Download build dist app
+
+      - name: Download dist artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pos-homologation-ve.zip
+          name: release-artifacts
+          path: artifacts/
+
       - name: Unzip Asset
         run: |
-          unzip pos-homologation-ve.zip -d docker/
-      - name: Set up QEMU
+          unzip artifacts/pos-homologation-ve.zip -d docker/
+
+      - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
+
+      - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -265,15 +245,28 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
 
-      - name: Download descriptor app
+
+      - name: Download dist artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pos-homologation-service.dsc
-          path: docker/
+          name: release-artifacts
+          path: artifacts/
 
-      - name: Set up QEMU
+      - name: Move descriptor file
+        run: |
+          cp artifacts/pos-homologation-service.dsc docker/
+
+      # TODO: Validate if remove 2 prev steps
+      # - name: Download descriptor file
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: release-artifacts
+      #     path: docker/
+
+      - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
+
+      - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
