@@ -62,6 +62,8 @@ services:
       DB_PORT: ${GRPC_SERVER_DB_PORT}
       DB_NAME: ${GRPC_SERVER_DB_NAME}
       DB_PASSWORD: ${GRPC_SERVER_DB_PASSWORD}
+      SERVER_LOG_LEVEL: ${GRPC_SERVER_LOG_LEVEL}
+      JAVA_OPTIONS: ${GRPC_JAVA_OPTIONS}
       SECRET_KEY: ${GRPC_SERVER_SECRET_KEY}
     networks:
       - pos_homologation_network
