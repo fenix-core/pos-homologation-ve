@@ -26,10 +26,13 @@ import org.compiere.util.Trx;
 import org.spin.base.Version;
 import org.spin.base.util.ConvertUtil;
 import org.spin.base.util.ValueUtil;
+import org.spin.model.MADAppRegistration;
 import org.spin.pos.service.order.OrderManagement;
 import org.spin.pos.service.order.OrderUtil;
 import org.spin.pos.service.order.ReverseSalesTransaction;
+import org.spin.proto.pos.homologation.GetPirnterDeviceInfoRequest;
 import org.spin.proto.pos.homologation.Order;
+import org.spin.proto.pos.homologation.PirnterDeviceInfo;
 import org.spin.proto.pos.homologation.PrintTicketResponse;
 import org.spin.proto.pos.homologation.ProcessReverseSalesWithoutPrintRequest;
 import org.spin.proto.pos.homologation.ProcessWithoutPrintRequest;
@@ -72,6 +75,22 @@ public class Service {
 				)
 			)
 		;
+		return builder;
+	}
+
+
+	public static PirnterDeviceInfo.Builder getPirnterDeviceInfo(GetPirnterDeviceInfoRequest request) {
+		MPOS pos = POS.validateAndGetPOS(request.getPosId(), true);
+		final int fiscalPrinterId = pos.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID);
+		if (fiscalPrinterId <= 0) {
+			throw new AdempiereException("@C_POS_ID@: @FillMandatory@ @FiscalPrinter_ID@");
+		}
+		MADAppRegistration printConfig = new MADAppRegistration(Env.getCtx(), fiscalPrinterId, null);
+
+		PirnterDeviceInfo.Builder builder = Converter.convertPrinterDeviceInfo(
+			printConfig
+		);
+
 		return builder;
 	}
 

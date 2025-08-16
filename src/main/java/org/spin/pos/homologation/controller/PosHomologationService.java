@@ -16,8 +16,10 @@ package org.spin.pos.homologation.controller;
 
 import org.compiere.util.CLogger;
 import org.spin.pos.homologation.service.Service;
+import org.spin.proto.pos.homologation.GetPirnterDeviceInfoRequest;
 import org.spin.proto.pos.homologation.GetSystemInfoRequest;
 import org.spin.proto.pos.homologation.Order;
+import org.spin.proto.pos.homologation.PirnterDeviceInfo;
 import org.spin.proto.pos.homologation.PosHomologationServiceGrpc.PosHomologationServiceImplBase;
 import org.spin.proto.pos.homologation.PrintTicketResponse;
 import org.spin.proto.pos.homologation.ProcessReverseSalesWithoutPrintRequest;
@@ -39,6 +41,25 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 	public void getSystemInfo(GetSystemInfoRequest request, StreamObserver<SystemInfo> responseObserver) {
 		try {
 			SystemInfo.Builder builder = Service.getSystemInfo();
+			responseObserver.onNext(builder.build());
+			responseObserver.onCompleted();
+		} catch (Exception e) {
+			log.warning(e.getLocalizedMessage());
+			e.printStackTrace();
+			responseObserver.onError(
+				Status.INTERNAL
+					.withDescription(e.getLocalizedMessage())
+					.withCause(e)
+					.asRuntimeException()
+			);
+		}
+	}
+
+
+	@Override
+	public void getPirnterDeviceInfo(GetPirnterDeviceInfoRequest request, StreamObserver<PirnterDeviceInfo> responseObserver) {
+		try {
+			PirnterDeviceInfo.Builder builder = Service.getPirnterDeviceInfo(request);
 			responseObserver.onNext(builder.build());
 			responseObserver.onCompleted();
 		} catch (Exception e) {
