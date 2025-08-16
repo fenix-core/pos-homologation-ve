@@ -74,11 +74,11 @@ public class FiscalPrintLocalAPI
 	// /**	Timeout	*/
 	// private int defaultTimeout = 0;
 	/**	Printer Name	*/
-	private final String PRINTER_NAME = "printer_name";
+	private static final String PRINTER_NAME = "printer_name";
 	/**	Printer Response Name	*/
-	private final String PRINTER_RESPONSE_NAME = "printer_response_name";
+	private static final String PRINTER_RESPONSE_NAME = "printer_response_name";
 	/**	Port Name		*/
-	private final String PORT_NAME = "port_name";
+	private static final String PORT_NAME = "port_name";
 	// /**	Read response Automatically	*/
 	// private boolean readResponseAfterSend = false;
 	/**	Date formatter	*/
@@ -114,17 +114,9 @@ public class FiscalPrintLocalAPI
 			// applicationType = registration.getApplicationType();
 			this.port = registration.getPort();
 			this.host = registration.getHost();
-			this.printerModel = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_Model);
 
-			this.portName = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_LocalPort);
-			if(!Util.isEmpty(this.portName, true)) {
-				if(this.portName.equals(FiscalPrinterUtil.COLUMNNAME_CUSTOM_PORT)) {
-					this.portName = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_CustomLocalPort);
-				}
-			}
-			if(Util.isEmpty(this.portName)) {
-				this.portName = registration.getParameterValue(PORT_NAME);
-			}
+			this.printerModel = registration.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_Model);
+			this.portName = getPortrName(registration);
 
 			this.printerName = getPrinterName(registration);
 			this.printerResponseName = getPrinterResponseName(registration);
@@ -732,30 +724,51 @@ public class FiscalPrintLocalAPI
 							: "")
 			+ "Result: " + response.getErrorMessage() + "\n";
 	}
-	
+
 	/**
 	 * Get response name
 	 * @param fiscalPrinter
 	 * @return
 	 * @return String
 	 */
-	public String getPrinterResponseName(MADAppRegistration fiscalPrinter) {
+	public static String getPrinterResponseName(MADAppRegistration fiscalPrinter) {
 		String printerName = getPrinterName(fiscalPrinter);
 		String printerResponseName = fiscalPrinter.getParameterValue(PRINTER_RESPONSE_NAME);
 		if(printerResponseName == null) {
 			printerResponseName = printerName + "-response";
 		}
-		return Optional.ofNullable(printerResponseName).orElse("").replaceAll("[^-0-9A-Za-z]", "").toLowerCase();
+		return Optional.ofNullable(printerResponseName)
+			.orElse("")
+			.replaceAll("[^-0-9A-Za-z]", "")
+			.toLowerCase()
+		;
 	}
-	
-	private String getPrinterName(MADAppRegistration fiscalPrinter) {
-		MOrg client = MOrg.get(Env.getCtx(), fiscalPrinter.getAD_Org_ID());
-		String printerName = client.getValue() + "-" + fiscalPrinter.getValue();
-		String queueName = fiscalPrinter.getParameterValue(PRINTER_NAME);
-		if(!Util.isEmpty(queueName)) {
-			printerName = queueName;
+
+	public static String getPrinterName(MADAppRegistration fiscalPrinter) {
+		String printerName = fiscalPrinter.getParameterValue(PRINTER_NAME);
+		if(Util.isEmpty(printerName, true)) {
+			MOrg client = MOrg.get(Env.getCtx(), fiscalPrinter.getAD_Org_ID());
+			printerName = client.getValue() + "-" + fiscalPrinter.getValue();
 		}
-		return Optional.ofNullable(printerName).orElse("").replaceAll("[^-0-9A-Za-z]", "").toLowerCase();
+		return Optional.ofNullable(printerName)
+			.orElse("")
+			.replaceAll("[^-0-9A-Za-z]", "")
+			.toLowerCase()
+		;
+	}
+
+	public static String getPortrName(MADAppRegistration fiscalPrinter) {
+		String portName = fiscalPrinter.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_LocalPort);
+		if (!Util.isEmpty(portName, true)) {
+			if (portName.equals(FiscalPrinterUtil.COLUMNNAME_CUSTOM_PORT)) {
+				portName = fiscalPrinter.get_ValueAsString(FiscalPrinterUtil.COLUMNNAME_ECA05_CustomLocalPort);
+			}
+		}
+		if (Util.isEmpty(portName, true)) {
+			portName = fiscalPrinter.getParameterValue(PORT_NAME);
+		}
+
+		return portName;
 	}
 
 	// public String read(Properties context, String transactionName, boolean allQueues) throws Exception {

@@ -260,6 +260,44 @@ message ProcessReverseSalesWithoutPrintRequest {
 }
 
 
+// Pirnter Device Info
+message PrinterModel {
+	int32 id = 1;
+	string uuid = 2;
+	string value = 3;
+	string name = 4;
+	string description = 5;
+	bool is_active = 6;
+}
+message PrinterPort {
+	int32 id = 1;
+	string uuid = 2;
+	string value = 3;
+	string name = 4;
+	string description = 5;
+	bool is_active = 6;
+}
+message PirnterDeviceInfo {
+	int32 id = 1;
+	string uuid = 2;
+	string serial_no = 3; // Value column
+	string name = 4;
+	string description = 5;
+	bool is_active = 6;
+	string printer_name = 7;
+	PrinterModel printer_model = 8;
+	string printer_port = 9; // Local port device
+	string custom_printer_port = 10; // Local port device
+	string printer_response_name = 11;
+	string host_name = 12;
+	int32 host_port = 13;
+	int32 request_timeout = 14;
+	bool is_read_response_after_send = 15;
+}
+message GetPirnterDeviceInfoRequest {
+	int32 pos_id = 1;
+}
+
 
 // The greeting service definition.
 service PosHomologationService {
@@ -267,6 +305,13 @@ service PosHomologationService {
 	rpc GetSystemInfo(GetSystemInfoRequest) returns (SystemInfo) {
 		option (google.api.http) = {
 			get: "/v1/pos/homologation/system-info"
+		};
+	}
+
+	// Fiscal Print (Device)
+	rpc GetPirnterDeviceInfo(GetPirnterDeviceInfoRequest) returns (PirnterDeviceInfo) {
+		option (google.api.http) = {
+			get: "/v1/pos/homologation/{pos_id}/printer"
 		};
 	}
 
