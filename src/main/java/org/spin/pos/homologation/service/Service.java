@@ -173,6 +173,10 @@ public class Service {
 			}
 		}
 
+		if (Util.isEmpty(request.getFiscalDocumentUuid(), true)) {
+			throw new AdempiereException("@FillMandatory@ @FiscalDocumentNo@ / @UUID@");
+		}
+
 		MADAppRegistration printConfig = new MADAppRegistration(Env.getCtx(), fiscalPrinterId, null);
 		AtomicReference<MFPLog> errorReference = new AtomicReference<MFPLog>();
 		Trx.run(transactionName -> {
