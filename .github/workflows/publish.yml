@@ -35,7 +35,7 @@ jobs:
       - name: Setup Gradle 9
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: current # 9.0.0
+          gradle-version: 9.0.0 # current
 
       - name: Set Version Properties
         run: |
@@ -150,21 +150,33 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Set Docker Alpine Tags
+        id: set_tags_alpine
+        run: |
+          # Get the release type
+          IS_PRE_RELEASE=${{ github.event.release.prerelease }}
+          # Set the base tags, always include the specific version tag
+          TAGS="${{ secrets.DOCKER_HUB_REPO_NAME }}:${{ github.event.release.tag_name }}-alpine"
+          # If it's not a pre-release, add the "latest" tag
+          if [[ "$IS_PRE_RELEASE" == "false" ]]; then
+            TAGS+=",${{ secrets.DOCKER_HUB_REPO_NAME }}:alpine"
+          fi
+          # Set the output variable for the next step to use
+          echo "tags_to_push=$TAGS" >> $GITHUB_OUTPUT
+
       - name: Push alpine image in Docker Hub
         uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/alpine.Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKER_HUB_REPO_NAME }}:alpine-${{ github.event.release.tag_name }}
-            ${{ secrets.DOCKER_HUB_REPO_NAME }}:alpine
+          tags: ${{ steps.set_tags_alpine.outputs.tags_to_push }}
 
 
   # TODO: Download .tar and add docker image without uncompress
   # Publish docker multiplatform image in Docker Hub Registry to application
   push-imame-dhr:
-    name: Push multiplatform docker image to Docker Hub
+    name: Push docker ubuntu multiplatform image to Docker Hub
     needs:
       - check-docker-secrets
     # Skip step based on secret
@@ -197,6 +209,20 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Set Docker Tags
+        id: set_tags
+        run: |
+          # Get the release type
+          IS_PRE_RELEASE=${{ github.event.release.prerelease }}
+          # Set the base tags, always include the specific version tag
+          TAGS="${{ secrets.DOCKER_HUB_REPO_NAME }}:${{ github.event.release.tag_name }}"
+          # If it's not a pre-release, add the "latest" tag
+          if [[ "$IS_PRE_RELEASE" == "false" ]]; then
+            TAGS+=",${{ secrets.DOCKER_HUB_REPO_NAME }}:latest"
+          fi
+          # Set the output variable for the next step to use
+          echo "tags_to_push=$TAGS" >> $GITHUB_OUTPUT
+
       - name: Push ubuntu image in Docker Hub
         uses: docker/build-push-action@v6
         with:
@@ -204,9 +230,7 @@ jobs:
           file: docker/ubuntu.Dockerfile
           platforms: linux/amd64,linux/amd64/v2,linux/arm64/v8
           push: true
-          tags: |
-            ${{ secrets.DOCKER_HUB_REPO_NAME }}:${{ github.event.release.tag_name }}
-            ${{ secrets.DOCKER_HUB_REPO_NAME }}:latest
+          tags: ${{ steps.set_tags.outputs.tags_to_push }}
 
 
 
@@ -235,7 +259,7 @@ jobs:
   # TODO: Download .tar and add docker image without uncompress
   # Publish docker multiplatform image in Docker Hub Registry to application
   push-proxy-imame-dhr:
-    name: Push multiplatform proxy docker image to Docker Hub
+    name: Push envoy proxy docker image to Docker Hub
     needs:
       - check-proxy-docker-secrets
     # Skip step based on secret
@@ -276,6 +300,20 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Set Proxy Docker Tags
+        id: set_tags_proxy
+        run: |
+          # Get the release type
+          IS_PRE_RELEASE=${{ github.event.release.prerelease }}
+          # Set the base tags, always include the specific version tag
+          TAGS="${{ secrets.DOCKER_HUB_REPO_NAME }}:${{ github.event.release.tag_name }}-alpine"
+          # If it's not a pre-release, add the "latest" tag
+          if [[ "$IS_PRE_RELEASE" == "false" ]]; then
+            TAGS+=",${{ secrets.DOCKER_HUB_REPO_NAME }}:alpine"
+          fi
+          # Set the output variable for the next step to use
+          echo "tags_to_push=$TAGS" >> $GITHUB_OUTPUT
+
       - name: Push envoy image in Docker Hub
         uses: docker/build-push-action@v6
         with:
@@ -283,6 +321,4 @@ jobs:
           file: docker/grpc_proxy.Dockerfile
           platforms: linux/amd64,linux/amd64/v2,linux/arm64/v8
           push: true
-          tags: |
-            ${{ secrets.DOCKER_HUB_PROXY_REPO_NAME }}:${{ github.event.release.tag_name }}
-            ${{ secrets.DOCKER_HUB_PROXY_REPO_NAME }}:latest
+          tags: ${{ steps.set_tags_proxy.outputs.tags_to_push }}
