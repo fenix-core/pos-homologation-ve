@@ -44,6 +44,7 @@ import org.spin.support.fp.FiscalSetup;
 import org.spin.support.fp.FiscalSetup.SetupType;
 import org.spin.support.fp.IFiscalPrinterResponse;
 import org.spin.util.fp.FiscalPrinterUtil;
+import org.spin.util.fp.SupportedCommand;
 import org.spin.util.text.DataUtils;
 
 /**
@@ -89,6 +90,14 @@ public class FiscalPrintLocalAPI
 	private final MClientInfo clientInfo;
 
 
+	// @Override
+	public String testConnection() {
+		//	Send X Report
+		FiscalReport xReport = new FiscalReport(SupportedCommand.X_Report);
+		printFiscalReport(xReport);
+		return "Ok";
+	}
+
 
 	public static FiscalPrintLocalAPI newInstance() {
 		return new FiscalPrintLocalAPI();
@@ -107,6 +116,7 @@ public class FiscalPrintLocalAPI
 	}
 
 
+	// @Override
 	public FiscalPrintLocalAPI setAppRegistrationId(int registrationId) {
 		this.registrationId = registrationId;
 		MADAppRegistration registration = MADAppRegistration.getById(Env.getCtx(), getAppRegistrationId(), null);

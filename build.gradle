@@ -237,9 +237,9 @@ dependencies {
 	implementation "${baseGroupId}:location-venezuela:2.5.1"
 
 	// ERP CyA
-	implementation "org.erpya.adempiere.fiscal-printer:fiscal-printer:1.6.6"
+	implementation "org.erpya.adempiere.fiscal-printer:fiscal-printer:1.7.1"
 	// implementation "org.erpya.adempiere.fiscal-printer:fiscal-printer-client:1.6.1"
-	// implementation "org.erpya.fiscal-printer.tools:fiscal-printer-api:1.3.9"
+	// implementation "org.erpya.fiscal-printer.tools:fiscal-printer-api:1.4.0"
 
 	//	Others
     compileOnly 'org.apache.tomcat:annotations-api:6.0.53'

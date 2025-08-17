@@ -20,9 +20,12 @@ import org.compiere.model.MRefList;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
 import org.spin.model.MADAppRegistration;
+import org.spin.model.MFPLog;
 import org.spin.proto.pos.homologation.PirnterDeviceInfo;
+import org.spin.proto.pos.homologation.PrinterLog;
 import org.spin.proto.pos.homologation.PrinterModel;
 import org.spin.service.grpc.util.value.StringManager;
+import org.spin.service.grpc.util.value.TimeManager;
 import org.spin.support.FiscalPrintLocalAPI;
 import org.spin.util.fp.FiscalPrinterUtil;
 
@@ -207,6 +210,68 @@ public class Converter {
 			StringManager.getValidString(printerPort)
 		);
 
+		return builder;
+	}
+
+
+	public static PrinterLog.Builder convertPrinterLog(MFPLog printerLog) {
+		PrinterLog.Builder builder = PrinterLog.newBuilder();
+		if (printerLog == null || printerLog.getFP_Log_ID() <= 0) {
+			return builder;
+		}
+
+		builder.setId(
+				printerLog.getFP_Log_ID()
+			)
+			.setUuid(
+				StringManager.getValidString(
+					printerLog.getUUID()
+				)
+			)
+			.setFiscalPrinterCode(
+				StringManager.getValidString(
+					printerLog.getFiscalPrinterCode()
+				)
+			)
+			.setFiscalPrinterName(
+				StringManager.getValidString(
+					printerLog.getFiscalPrinterName()
+				)
+			)
+			.setFiscalPrinterResutl(
+				StringManager.getValidString(
+					printerLog.getFiscalPrinterResult()
+				)
+			)
+			.setPrintDate(
+				TimeManager.convertDateToValue(
+					printerLog.getFiscalPrintDate()
+				)
+			)
+			.setDocumentUuid(
+				StringManager.getValidString(
+					printerLog.getFiscalDocumentUUID()
+				)
+			)
+			.setDocumentNo(
+				StringManager.getValidString(
+					printerLog.getFiscalDocumentNo()
+				)
+			)
+			.setLastInvoiceNo(
+				StringManager.getValidString(
+					printerLog.getLastFiscalInvoiceNo()
+				)
+			)
+			.setLastCreditMemoNo(
+				StringManager.getValidString(
+					printerLog.getLastFiscalCreditMemoNo()
+				)
+			)
+			.setIsError(
+				printerLog.isError()
+			)
+		;
 		return builder;
 	}
 

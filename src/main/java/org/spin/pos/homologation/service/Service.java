@@ -14,26 +14,33 @@
  ************************************************************************************/
 package org.spin.pos.homologation.service;
 
+import java.sql.Timestamp;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MOrder;
 import org.compiere.model.MPOS;
+import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Trx;
+import org.compiere.util.Util;
 import org.spin.base.Version;
 import org.spin.base.util.ConvertUtil;
 import org.spin.base.util.ValueUtil;
 import org.spin.model.MADAppRegistration;
+import org.spin.model.MFPLog;
 import org.spin.pos.service.order.OrderManagement;
 import org.spin.pos.service.order.OrderUtil;
 import org.spin.pos.service.order.ReverseSalesTransaction;
+import org.spin.proto.pos.homologation.CreatePrinterLogRequest;
 import org.spin.proto.pos.homologation.GetPirnterDeviceInfoRequest;
 import org.spin.proto.pos.homologation.Order;
 import org.spin.proto.pos.homologation.PirnterDeviceInfo;
 import org.spin.proto.pos.homologation.PrintTicketResponse;
+import org.spin.proto.pos.homologation.PrinterLog;
 import org.spin.proto.pos.homologation.ProcessReverseSalesWithoutPrintRequest;
 import org.spin.proto.pos.homologation.ProcessWithoutPrintRequest;
 import org.spin.proto.pos.homologation.SimulateProcessOrderRequest;
@@ -81,14 +88,162 @@ public class Service {
 
 	public static PirnterDeviceInfo.Builder getPirnterDeviceInfo(GetPirnterDeviceInfoRequest request) {
 		MPOS pos = POS.validateAndGetPOS(request.getPosId(), true);
-		final int fiscalPrinterId = pos.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID);
+		int fiscalPrinterId = request.getId();
 		if (fiscalPrinterId <= 0) {
-			throw new AdempiereException("@C_POS_ID@: @FillMandatory@ @FiscalPrinter_ID@");
+			// get default from POS terminal
+			fiscalPrinterId = pos.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID);
+			if (fiscalPrinterId <= 0) {
+				throw new AdempiereException("@C_POS_ID@: @FillMandatory@ @FiscalPrinter_ID@");
+			}
 		}
+
 		MADAppRegistration printConfig = new MADAppRegistration(Env.getCtx(), fiscalPrinterId, null);
 
 		PirnterDeviceInfo.Builder builder = Converter.convertPrinterDeviceInfo(
 			printConfig
+		);
+
+		return builder;
+	}
+
+
+	public static MFPLog createPrinterErrorLog(int posId, int printerId, String message, String transactionName) {
+		MPOS pos = POS.validateAndGetPOS(posId, true);
+		int fiscalPrinterId = printerId;
+		if (fiscalPrinterId <= 0) {
+			// get default from POS terminal
+			fiscalPrinterId = pos.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID);
+			if (fiscalPrinterId <= 0) {
+				throw new AdempiereException("@C_POS_ID@: @FillMandatory@ @FiscalPrinter_ID@");
+			}
+		}
+		MADAppRegistration printConfig = new MADAppRegistration(Env.getCtx(), fiscalPrinterId, null);
+
+		MFPLog errorLog = new MFPLog(Env.getCtx(), 0, transactionName);
+
+		// TODO: Add support to AppRegistration link as `FiscalPrinter_ID` column name
+		if (errorLog.get_ColumnIndex(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID) >= 0) {
+			errorLog.set_CustomColumn(
+				FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID,
+				printConfig.getAD_AppRegistration_ID()
+			);
+		}
+
+		Optional.ofNullable(
+			printConfig.getValue()
+		).ifPresent(fiscalPrinterCode -> {
+			errorLog.setFiscalPrinterCode(fiscalPrinterCode);
+		});
+		Optional.ofNullable(
+			FiscalPrintLocalAPI.getPrinterName(printConfig)
+		).ifPresent(printerName -> {
+			errorLog.setFiscalPrinterName(printerName);
+		});
+		Optional.ofNullable(
+			message
+		).ifPresent(result -> {
+			errorLog.addFiscalPrinterResult(result);
+		});
+		// errorLog.setFiscalPrinterResult(
+		// 	request.getMessage()
+		// );
+
+		// TODO: Support to source document UUID
+		errorLog.setFiscalDocumentUUID(
+			DB.getUUID(transactionName)
+		);
+
+		errorLog.setIsError(true);
+
+		Timestamp currentDateTime = new Timestamp(System.currentTimeMillis());
+		errorLog.setFiscalPrintDate(currentDateTime);
+
+		errorLog.saveEx();
+		return errorLog;
+	}
+
+
+	public static PrinterLog.Builder createPrinterLog(CreatePrinterLogRequest request) {
+		MPOS pos = POS.validateAndGetPOS(request.getPosId(), true);
+		int fiscalPrinterId = request.getPrinterId();
+		if (fiscalPrinterId <= 0) {
+			// get default from POS terminal
+			fiscalPrinterId = pos.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID);
+			if (fiscalPrinterId <= 0) {
+				throw new AdempiereException("@C_POS_ID@: @FillMandatory@ @FiscalPrinter_ID@");
+			}
+		}
+
+		if (Util.isEmpty(request.getFiscalDocumentUuid(), true)) {
+			throw new AdempiereException("@FillMandatory@ @FiscalDocumentNo@ / @UUID@");
+		}
+
+		MADAppRegistration printConfig = new MADAppRegistration(Env.getCtx(), fiscalPrinterId, null);
+		AtomicReference<MFPLog> errorReference = new AtomicReference<MFPLog>();
+		Trx.run(transactionName -> {
+			MFPLog printerLog = new MFPLog(Env.getCtx(), 0, transactionName);
+
+			// TODO: Add support to AppRegistration link as `FiscalPrinter_ID` column name
+			if (printerLog.get_ColumnIndex(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID) >= 0) {
+				printerLog.set_CustomColumn(
+					FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID,
+					printConfig.getAD_AppRegistration_ID()
+				);
+			}
+
+			Optional.ofNullable(
+				printConfig.getValue()
+			).ifPresent(fiscalPrinterCode -> {
+				printerLog.setFiscalPrinterCode(fiscalPrinterCode);
+			});
+			Optional.ofNullable(
+				FiscalPrintLocalAPI.getPrinterName(printConfig)
+			).ifPresent(printerName -> {
+				printerLog.setFiscalPrinterName(printerName);
+			});
+
+			Optional.ofNullable(
+				request.getFiscalDocumentNo()
+			).ifPresent(documentNo -> {
+				printerLog.setFiscalDocumentNo(documentNo);
+			});
+			Optional.ofNullable(
+				request.getFiscalDocumentUuid()
+			).ifPresent(documentUuid -> {
+				printerLog.setFiscalDocumentUUID(documentUuid);
+			});
+	
+			Optional.ofNullable(
+				request.getLastInvoiceNo()
+			).ifPresent(lastInvoiceNo -> {
+				printerLog.setLastFiscalInvoiceNo(lastInvoiceNo);
+			});
+			Optional.ofNullable(
+				request.getLastCreditMemoNo()
+			).ifPresent(lastCreditMemoNo -> {
+				printerLog.setLastFiscalCreditMemoNo(lastCreditMemoNo);
+			});
+			Optional.ofNullable(
+				request.getMessage()
+			).ifPresent(result -> {
+				printerLog.addFiscalPrinterResult(result);
+			});
+			// printerLog.setFiscalPrinterResult(
+			// 	request.getMessage()
+			// );
+
+			printerLog.setIsError(true);
+
+			Timestamp currentDateTime = new Timestamp(System.currentTimeMillis());
+			printerLog.setFiscalPrintDate(currentDateTime);
+
+			printerLog.saveEx();
+
+			errorReference.set(printerLog);
+		});
+
+		PrinterLog.Builder builder = Converter.convertPrinterLog(
+			errorReference.get()
 		);
 
 		return builder;
