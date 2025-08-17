@@ -28,11 +28,14 @@ services:
     image: ${ADEMPIERE_ZK_IMAGE}
     container_name: ${ADEMPIERE_ZK_HOST}
     restart: ${GENERIC_RESTART}
+    # secrets:
+    #   - adempiere_db_password
     environment:
       ADEMPIERE_DB_SERVER: ${ADEMPIERE_ZK_DB_HOST}
       ADEMPIERE_DB_PORT: ${ADEMPIERE_ZK_DB_PORT}
       ADEMPIERE_DB_NAME: ${ADEMPIERE_ZK_DB_NAME}
       ADEMPIERE_DB_PASSWORD: ${ADEMPIERE_ZK_DB_PASSWORD}
+      # ADEMPIERE_DB_PASSWORD_FILE: /run/secrets/adempiere_db_password
     # depends_on:
     #   adempiere-database:
     #     condition: service_healthy
@@ -56,12 +59,15 @@ services:
     # depends_on:
     #   adempiere-database:
     #     condition: service_healthy
+    # secrets:
+    #   - adempiere_db_password
     environment:
       SERVER_PORT: ${GRPC_SERVER_INTERNAL_PORT}
       DB_HOST: ${POSTGRES_HOST}
       DB_PORT: ${GRPC_SERVER_DB_PORT}
       DB_NAME: ${GRPC_SERVER_DB_NAME}
       DB_PASSWORD: ${GRPC_SERVER_DB_PASSWORD}
+      # DB_PASSWORD_FILE: /run/secrets/adempiere_db_password
       SERVER_LOG_LEVEL: ${GRPC_SERVER_LOG_LEVEL}
       JAVA_OPTIONS: ${GRPC_JAVA_OPTIONS}
       SECRET_KEY: ${GRPC_SERVER_SECRET_KEY}
@@ -190,6 +196,11 @@ services:
       - pos_homologation_network
 
 
+
+
+# secrets:
+#   adempiere_db_password:
+#     file: ./secrets/adempiere_db_password.txt
 
 networks:
   pos_homologation_network:
