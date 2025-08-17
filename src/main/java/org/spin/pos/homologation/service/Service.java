@@ -26,6 +26,7 @@ import org.compiere.model.MPOS;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Trx;
+import org.compiere.util.Util;
 import org.spin.base.Version;
 import org.spin.base.util.ConvertUtil;
 import org.spin.base.util.ValueUtil;
