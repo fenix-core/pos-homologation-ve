@@ -57,7 +57,7 @@ repositories {
 	mavenLocal()
 	mavenCentral()
 	maven {
-		// Custom GitHub Repository (ADempiere by Default)
+		// Custom GitHub Repository (ERPYA by Default)
 		url = findProperty("deployRepository") ?: System.properties['deploy.repository'] ?:
 			projectEnv.get("GITHUB_DEPLOY_REPOSITORY", null) ?: System.getenv("GITHUB_DEPLOY_REPOSITORY") ?:
 			"https://maven.pkg.github.com/erpya/repository"

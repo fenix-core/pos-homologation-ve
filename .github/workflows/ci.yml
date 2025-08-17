@@ -53,7 +53,7 @@ jobs:
       - name: Setup Gradle 9
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: current # 9.0.0
+          gradle-version: 9.0.0 # current
 
       - name: Build with Gradle
         run: gradle build
