@@ -23,6 +23,71 @@ message SystemInfo {
 }
 
 
+// Pirnter Device Info
+message PrinterModel {
+	int32 id = 1;
+	string uuid = 2;
+	string value = 3;
+	string name = 4;
+	string description = 5;
+	bool is_active = 6;
+}
+message PrinterPort {
+	int32 id = 1;
+	string uuid = 2;
+	string value = 3;
+	string name = 4;
+	string description = 5;
+	bool is_active = 6;
+}
+message PirnterDeviceInfo {
+	int32 id = 1;
+	string uuid = 2;
+	string serial_no = 3; // Value column
+	string name = 4;
+	string description = 5;
+	bool is_active = 6;
+	string printer_name = 7;
+	PrinterModel printer_model = 8;
+	string printer_port = 9; // Local port device
+	string custom_printer_port = 10; // Local port device
+	string printer_response_name = 11;
+	string host_name = 12;
+	int32 host_port = 13;
+	int32 request_timeout = 14;
+	bool is_read_response_after_send = 15;
+}
+message GetPirnterDeviceInfoRequest {
+	int32 pos_id = 1;
+	int32 id = 2;
+}
+
+
+// Printer Log (based on PrinterResponse)
+message PrinterLog {
+	int32 id = 1;
+	string uuid = 2;
+	string fiscal_printer_code = 3;
+	string fiscal_printer_name = 4;
+	string fiscal_printer_resutl = 5;
+	google.protobuf.Timestamp print_date = 6;
+	string document_uuid = 7;
+	string document_no = 8;
+	string last_invoice_no = 9;
+	string last_credit_memo_no = 10;
+	bool is_error = 11;
+}
+message CreatePrinterLogRequest {
+	int32 pos_id = 1;
+	int32 printer_id = 2;
+	string message = 3;
+	string fiscal_document_uuid = 4;
+	string fiscal_document_no = 5;
+	string last_invoice_no = 6;
+	string last_credit_memo_no = 7;
+}
+
+
 // Request for simulate process a order
 message SimulateProcessOrderRequest {
 	int32 pos_id = 1;
@@ -260,45 +325,6 @@ message ProcessReverseSalesWithoutPrintRequest {
 }
 
 
-// Pirnter Device Info
-message PrinterModel {
-	int32 id = 1;
-	string uuid = 2;
-	string value = 3;
-	string name = 4;
-	string description = 5;
-	bool is_active = 6;
-}
-message PrinterPort {
-	int32 id = 1;
-	string uuid = 2;
-	string value = 3;
-	string name = 4;
-	string description = 5;
-	bool is_active = 6;
-}
-message PirnterDeviceInfo {
-	int32 id = 1;
-	string uuid = 2;
-	string serial_no = 3; // Value column
-	string name = 4;
-	string description = 5;
-	bool is_active = 6;
-	string printer_name = 7;
-	PrinterModel printer_model = 8;
-	string printer_port = 9; // Local port device
-	string custom_printer_port = 10; // Local port device
-	string printer_response_name = 11;
-	string host_name = 12;
-	int32 host_port = 13;
-	int32 request_timeout = 14;
-	bool is_read_response_after_send = 15;
-}
-message GetPirnterDeviceInfoRequest {
-	int32 pos_id = 1;
-}
-
-
 // The greeting service definition.
 service PosHomologationService {
 	// Get a System Information
@@ -311,7 +337,21 @@ service PosHomologationService {
 	// Fiscal Print (Device)
 	rpc GetPirnterDeviceInfo(GetPirnterDeviceInfoRequest) returns (PirnterDeviceInfo) {
 		option (google.api.http) = {
-			get: "/v1/pos/homologation/{pos_id}/printer"
+			get: "/v1/pos/homologation/{pos_id}/printers"
+			additional_bindings: {
+				post: "/v1/pos/homologation/{pos_id}/printers/{id}"
+				body: "*"
+			}
+		};
+	}
+	rpc CreatePrinterLog(CreatePrinterLogRequest) returns (PrinterLog) {
+		option (google.api.http) = {
+			post: "/v1/pos/homologation/{pos_id}/printers/{printer_id}/log",
+			body: "*"
+			additional_bindings: {
+				post: "/v1/pos/homologation/{pos_id}/printers/{printer_id}/error"
+				body: "*"
+			}
 		};
 	}
 

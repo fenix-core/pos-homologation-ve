@@ -16,12 +16,14 @@ package org.spin.pos.homologation.controller;
 
 import org.compiere.util.CLogger;
 import org.spin.pos.homologation.service.Service;
+import org.spin.proto.pos.homologation.CreatePrinterLogRequest;
 import org.spin.proto.pos.homologation.GetPirnterDeviceInfoRequest;
 import org.spin.proto.pos.homologation.GetSystemInfoRequest;
 import org.spin.proto.pos.homologation.Order;
 import org.spin.proto.pos.homologation.PirnterDeviceInfo;
 import org.spin.proto.pos.homologation.PosHomologationServiceGrpc.PosHomologationServiceImplBase;
 import org.spin.proto.pos.homologation.PrintTicketResponse;
+import org.spin.proto.pos.homologation.PrinterLog;
 import org.spin.proto.pos.homologation.ProcessReverseSalesWithoutPrintRequest;
 import org.spin.proto.pos.homologation.ProcessWithoutPrintRequest;
 import org.spin.proto.pos.homologation.SimulateProcessOrderRequest;
@@ -76,6 +78,25 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 
 
 	@Override
+	public void createPrinterLog(CreatePrinterLogRequest request, StreamObserver<PrinterLog> responseObserver) {
+		try {
+			PrinterLog.Builder builder = Service.createPrinterLog(request);
+			responseObserver.onNext(builder.build());
+			responseObserver.onCompleted();
+		} catch (Exception e) {
+			log.warning(e.getLocalizedMessage());
+			e.printStackTrace();
+			responseObserver.onError(
+				Status.INTERNAL
+					.withDescription(e.getLocalizedMessage())
+					.withCause(e)
+					.asRuntimeException()
+			);
+		}
+	}
+
+
+	@Override
 	public void simulateProcessOrder(SimulateProcessOrderRequest request, StreamObserver<PrintTicketResponse> responseObserver) {
 		try {
 			PrintTicketResponse.Builder builder = Service.simulateProcessOrder(request);
@@ -91,6 +112,12 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 					.withDescription(e.getLocalizedMessage())
 					.withCause(e)
 					.asRuntimeException()
+			);
+			Service.createPrinterErrorLog(
+				request.getPosId(),
+				-1,
+				e.getLocalizedMessage(),
+				null
 			);
 		}
 	}
@@ -113,6 +140,12 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 					.withCause(e)
 					.asRuntimeException()
 			);
+			Service.createPrinterErrorLog(
+				request.getPosId(),
+				-1,
+				e.getLocalizedMessage(),
+				null
+			);
 		}
 	}
 
@@ -134,6 +167,12 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 					.withCause(e)
 					.asRuntimeException()
 			);
+			Service.createPrinterErrorLog(
+				request.getPosId(),
+				-1,
+				e.getLocalizedMessage(),
+				null
+			);
 		}
 	}
 
@@ -154,6 +193,12 @@ public class PosHomologationService extends PosHomologationServiceImplBase {
 					.withDescription(e.getLocalizedMessage())
 					.withCause(e)
 					.asRuntimeException()
+			);
+			Service.createPrinterErrorLog(
+				request.getPosId(),
+				-1,
+				e.getLocalizedMessage(),
+				null
 			);
 		}
 	}
