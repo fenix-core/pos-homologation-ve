@@ -259,7 +259,7 @@ public class Converter {
 				)
 			)
 			.setLastInvoiceNo(
-				StringManager.getStringFromObject(
+				StringManager.getValidString(
 					printerLog.getLastFiscalInvoiceNo()
 				)
 			)

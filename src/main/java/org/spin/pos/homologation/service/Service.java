@@ -23,6 +23,7 @@ import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MOrder;
 import org.compiere.model.MPOS;
+import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Trx;
 import org.spin.base.Version;
@@ -145,6 +146,11 @@ public class Service {
 		// errorLog.setFiscalPrinterResult(
 		// 	request.getMessage()
 		// );
+
+		// TODO: Support to source document UUID
+		errorLog.setFiscalDocumentUUID(
+			DB.getUUID(transactionName)
+		);
 
 		errorLog.setIsError(true);
 
