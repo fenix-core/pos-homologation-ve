@@ -85,6 +85,7 @@ message CreatePrinterLogRequest {
 	string fiscal_document_no = 5;
 	string last_invoice_no = 6;
 	string last_credit_memo_no = 7;
+	bool is_error = 8;
 }
 
 

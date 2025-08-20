@@ -201,6 +201,9 @@ public class Service {
 			).ifPresent(printerName -> {
 				printerLog.setFiscalPrinterName(printerName);
 			});
+			printerLog.setIsError(
+				request.getIsError()
+			);
 
 			Optional.ofNullable(
 				request.getFiscalDocumentNo()
