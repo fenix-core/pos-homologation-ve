@@ -235,8 +235,6 @@ public class Service {
 			// 	request.getMessage()
 			// );
 
-			printerLog.setIsError(true);
-
 			Timestamp currentDateTime = new Timestamp(System.currentTimeMillis());
 			printerLog.setFiscalPrintDate(currentDateTime);
 
