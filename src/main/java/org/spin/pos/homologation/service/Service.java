@@ -52,6 +52,7 @@ import org.spin.service.grpc.util.value.ValueManager;
 import org.spin.service.pos.POS;
 import org.spin.support.FiscalPrintLocalAPI;
 import org.spin.util.fp.FiscalPrinterUtil;
+import org.spin.util.text.DataUtils;
 
 import com.google.protobuf.Value;
 
@@ -260,7 +261,7 @@ public class Service {
 		AtomicReference<MOrder> orderReference = new AtomicReference<MOrder>();
 		try {
 			Trx.run(transactionName -> {
-				MOrder salesOrder = OrderManagement.simulateProcessOrder(
+				MOrder salesOrder = OrderManagement.processOrder(
 					pos,
 					request.getId(),
 					request.getIsOpenRefund(),
@@ -310,18 +311,32 @@ public class Service {
 	public static Order.Builder processWithoutPrint(ProcessWithoutPrintRequest request) {
 		MPOS pos = POS.validateAndGetPOS(request.getPosId(), true);
 		OrderUtil.validateAndGetOrder(request.getId());
+		AtomicReference<MOrder> orderReference = new AtomicReference<MOrder>();
 
-		MOrder order = OrderManagement.processOrder(
-			pos,
-			request.getId(),
-			request.getIsOpenRefund(),
-			request.getClosingNo(),
-			request.getFiscalDocumentNo(),
-			request.getFiscalPrinterSerialNo(),
-			request.getPrintDate()
+		Trx.run(transactionName -> {
+			MOrder salesOrder = OrderManagement.processOrder(
+				pos,
+				request.getId(),
+				request.getIsOpenRefund(),
+				transactionName
+			);
+
+			fillInvoiceWithPrintResult(
+				pos,
+				salesOrder.getC_Order_ID(),
+				request.getClosingNo(),
+				request.getFiscalDocumentNo(),
+				request.getFiscalPrinterSerialNo(),
+				request.getPrintDate(),
+				transactionName
+			);
+
+			orderReference.set(salesOrder);
+		});
+
+		Order.Builder builder = ConvertUtil.convertOrder(
+			orderReference.get()
 		);
-
-		Order.Builder builder = ConvertUtil.convertOrder(order);
 		return builder;
 	}
 
@@ -393,12 +408,69 @@ public class Service {
 				request.getDescription(),
 				transactionName
 			);
+
+			fillInvoiceWithPrintResult(
+				pos,
+				returnOrder.getC_Order_ID(),
+				request.getClosingNo(),
+				request.getFiscalDocumentNo(),
+				request.getFiscalPrinterSerialNo(),
+				request.getPrintDate(),
+				transactionName
+			);
 			returnOrderReference.set(returnOrder);
 		});
 		//	Default
 		return ConvertUtil.convertOrder(
 			returnOrderReference.get()
 		);
+	}
+
+
+
+	public static MInvoice fillInvoiceWithPrintResult(MPOS pos, int orderId, String closingNo, String fiscalDocumentNo, String fiscalPrinterSerialNo, String printDate, String transactionName) {
+		MOrder order = new MOrder(Env.getCtx(), orderId, transactionName);
+		if (order == null || order.getC_Invoice_ID() <= 0) {
+			return null;
+		}
+		// overwrite document no on Invoice
+		MInvoice invocie = new MInvoice(Env.getCtx(), order.getC_Invoice_ID(), transactionName);
+		invocie.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalDocumentNo, fiscalDocumentNo);
+		invocie.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_PrintFiscalDocument, "Y");
+		invocie.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalClosingNo, closingNo);
+		if (!Util.isEmpty(printDate, true)) {
+			Timestamp printDateTimestamp = TimeManager.getTimestampFromString(printDate);
+			order.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalPrintDate, printDateTimestamp);
+		}
+
+		int appPrinterId = order.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID);
+		if (appPrinterId <= 0) {
+			appPrinterId = pos.get_ValueAsInt(
+				FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID
+			);
+		}
+		if(appPrinterId > 0) {
+			String printerSerialNo = fiscalPrinterSerialNo;
+			if(Util.isEmpty(printerSerialNo)) {
+				MADAppRegistration registeredApplication = MADAppRegistration.getById(
+					Env.getCtx(),
+					appPrinterId,
+					null
+				);
+				if (registeredApplication != null && registeredApplication.getAD_AppRegistration_ID() > 0) {
+					printerSerialNo = Optional.ofNullable(registeredApplication.getValue()).orElse("");
+				}
+			}
+			if(printerSerialNo.length() > 4) {
+				printerSerialNo = printerSerialNo.substring(printerSerialNo.length() - 4);
+			}
+			final String completeFiscalDocumentNo = DataUtils.leftPadding(printerSerialNo, 4, "0") + "-" + fiscalDocumentNo;
+			order.setDocumentNo(completeFiscalDocumentNo);
+			order.saveEx(transactionName);
+			invocie.setDocumentNo(completeFiscalDocumentNo);
+		}
+		invocie.saveEx(transactionName);
+		return invocie;
 	}
 
 }
