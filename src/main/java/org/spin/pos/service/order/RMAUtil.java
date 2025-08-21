@@ -181,9 +181,9 @@ public class RMAUtil {
 	 * @param returnOrder
 	 * @param transactionName
 	 */
-	public static void generateCreditMemoFromRMA(MOrder returnOrder, String transactionName) {
+	public static MInvoice generateCreditMemoFromRMA(MOrder returnOrder, String transactionName) {
 		if(!OrderUtil.isInvoiced(returnOrder.get_ValueAsInt(ColumnsAdded.COLUMNNAME_ECA14_Source_Order_ID), transactionName)) {
-			return;
+			return null;
 		}
 		MInvoice invoice = new MInvoice (returnOrder, 0, OrderUtil.getToday());
 		invoice.saveEx();
@@ -214,6 +214,8 @@ public class RMAUtil {
 		returnOrder.setIsInvoiced(true);
 		returnOrder.set_ValueOfColumn("AssignedSalesRep_ID", null);
 		returnOrder.saveEx();
+
+		return invoice;
 	}
 
 	/**
@@ -221,9 +223,9 @@ public class RMAUtil {
 	 * @param returnOrder
 	 * @param transactionName
 	 */
-	public static void generateReturnFromRMA(MOrder returnOrder, String transactionName) {
+	public static MInOut generateReturnFromRMA(MOrder returnOrder, String transactionName) {
 		if(!OrderUtil.isDelivered(returnOrder.get_ValueAsInt(ColumnsAdded.COLUMNNAME_ECA14_Source_Order_ID), transactionName)) {
-			return;
+			return null;
 		}
 		MInOut shipment = new MInOut (returnOrder, 0, OrderUtil.getToday());
 		shipment.setM_Warehouse_ID(returnOrder.getM_Warehouse_ID());	//	sets Org too
@@ -253,6 +255,7 @@ public class RMAUtil {
 		}
 		returnOrder.setIsDelivered(true);
 		shipment.saveEx();
+		return shipment;
 	}
 
 	/**

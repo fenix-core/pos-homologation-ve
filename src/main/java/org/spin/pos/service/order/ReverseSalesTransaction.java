@@ -1,12 +1,20 @@
 package org.spin.pos.service.order;
 
+import java.sql.Timestamp;
+import java.util.Optional;
+
 import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MInvoice;
 import org.compiere.model.MOrder;
 import org.compiere.model.MPOS;
 import org.compiere.process.DocAction;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
 import org.spin.base.util.DocumentUtil;
+import org.spin.model.MADAppRegistration;
+import org.spin.service.grpc.util.value.TimeManager;
+import org.spin.util.fp.FiscalPrinterUtil;
+import org.spin.util.text.DataUtils;
 
 public class ReverseSalesTransaction {
 
@@ -61,13 +69,61 @@ public class ReverseSalesTransaction {
 			throw new AdempiereException("@ProcessFailed@ :" + returnOrder.getProcessMsg());
 		}
 		returnOrder.saveEx();
+
 		//	Generate Return
 		RMAUtil.generateReturnFromRMA(returnOrder, transactionName);
+
 		//	Generate Credit Memo
 		RMAUtil.generateCreditMemoFromRMA(returnOrder, transactionName);
+
 		//	Return all payments
 		RMAUtil.createReversedPayments(pos, sourceOrder, returnOrder, transactionName);
 		return returnOrder;
+	}
+
+
+	public static MInvoice fillCreditMemo(MPOS pos, MOrder reverseSales, String closingNo, String fiscalDocumentNo, String fiscalPrinterSerialNo, String printDate, String transactionName) {
+		if (reverseSales == null || reverseSales.getC_Invoice_ID() <= 0) {
+			return null;
+		}
+		// overwrite document no on Invoice
+		MInvoice creditMemo = new MInvoice(Env.getCtx(), reverseSales.getC_Invoice_ID(), transactionName);
+		creditMemo.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalDocumentNo, fiscalDocumentNo);
+		creditMemo.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_PrintFiscalDocument, "Y");
+		creditMemo.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalClosingNo, closingNo);
+		if (!Util.isEmpty(printDate, true)) {
+			Timestamp printDateTimestamp = TimeManager.getTimestampFromString(printDate);
+			reverseSales.set_ValueOfColumn(FiscalPrinterUtil.COLUMNNAME_FiscalPrintDate, printDateTimestamp);
+		}
+		reverseSales.setDocumentNo(fiscalDocumentNo);
+		reverseSales.saveEx();
+
+		int appPrinterId = reverseSales.get_ValueAsInt(FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID);
+		if (appPrinterId <= 0) {
+			appPrinterId = pos.get_ValueAsInt(
+				FiscalPrinterUtil.COLUMNNAME_FiscalPrinter_ID
+			);
+		}
+		if(appPrinterId > 0) {
+			String printerSerialNo = fiscalPrinterSerialNo;
+			if(Util.isEmpty(printerSerialNo)) {
+				MADAppRegistration registeredApplication = MADAppRegistration.getById(
+					Env.getCtx(),
+					appPrinterId,
+					null
+				);
+				if (registeredApplication != null && registeredApplication.getAD_AppRegistration_ID() > 0) {
+					printerSerialNo = Optional.ofNullable(registeredApplication.getValue()).orElse("");
+				}
+			}
+			if(printerSerialNo.length() > 4) {
+				printerSerialNo = printerSerialNo.substring(printerSerialNo.length() - 4);
+			}
+			final String completeFiscalDocumentNo = DataUtils.leftPadding(printerSerialNo, 4, "0") + "-" + fiscalDocumentNo;
+			reverseSales.setDocumentNo(completeFiscalDocumentNo);
+			reverseSales.saveEx();
+		}
+		return creditMemo;
 	}
 
 }
